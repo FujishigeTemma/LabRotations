@@ -1,0 +1,18 @@
+version: 3
+
+tasks:
+  init:
+    cmds:
+      - go install github.com/go-task/task/v3/cmd/task@latest
+      - curl -sSf https://rye-up.com/get | bash
+      - rye sync
+  build:mechanisms:
+    dir: src/mechanisms
+    cmds:
+      - rm -rf ../x86_64
+      - nrnivmodl
+      - mv x86_64 ../x86_64
+  run:
+    dir: src
+    cmds:
+      - rye run python main.py
