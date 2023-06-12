@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
-from cells import BasketCell
 from neuron import h
 from neuron.units import ms, mV
+
+from cells import BasketCell
 
 if __name__ == "__main__":
     pv1 = BasketCell(0)
@@ -10,9 +11,9 @@ if __name__ == "__main__":
     gap1 = h.gap(pv1.soma(0.5))
     gap2 = h.gap(pv2.soma(0.5))
 
-    gap1.r = 1
+    gap1.r = 2e2
     gap1.delay = 5
-    gap2.r = 1
+    gap2.r = 2e2
     gap2.delay = 5
 
     h.setpointer(pv2.soma(0.5)._ref_v, "v_pair", gap1)
@@ -22,7 +23,7 @@ if __name__ == "__main__":
 
     stimulus.delay = 100 * ms
     stimulus.dur = 200 * ms
-    stimulus.amp = 0.2  # nA
+    stimulus.amp = -0.2  # nA
 
     pv1_v = h.Vector().record(pv1.soma(0.5)._ref_v)
     pv2_v = h.Vector().record(pv2.soma(0.5)._ref_v)
@@ -38,4 +39,4 @@ if __name__ == "__main__":
     ax.set(xlabel="t (ms)", ylabel="v (mV)")
     ax.legend()
 
-    plt.savefig("gap_junction.png")
+    plt.savefig("gap_junction_negative.png")
