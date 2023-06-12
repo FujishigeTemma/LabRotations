@@ -1,8 +1,7 @@
 import matplotlib.pyplot as plt
+from cells import BasketCell
 from neuron import h
 from neuron.units import ms, mV
-
-from cells import BasketCell
 
 if __name__ == "__main__":
     pv1 = BasketCell(0)
@@ -11,9 +10,9 @@ if __name__ == "__main__":
     gap1 = h.gap(pv1.soma(0.5))
     gap2 = h.gap(pv2.soma(0.5))
 
-    gap1.r = 5e2
+    gap1.r = 1
     gap1.delay = 5
-    gap2.r = 5e2
+    gap2.r = 1
     gap2.delay = 5
 
     h.setpointer(pv2.soma(0.5)._ref_v, "v_pair", gap1)
@@ -39,4 +38,4 @@ if __name__ == "__main__":
     ax.set(xlabel="t (ms)", ylabel="v (mV)")
     ax.legend()
 
-    plt.show()
+    plt.savefig("gap_junction.png")

@@ -1,6 +1,6 @@
+import csv
 from typing import List
 
-import numpy as np
 from neuron import h
 
 h.load_file("stdrun.hoc")
@@ -22,7 +22,7 @@ class Cell:
         self.soma.L = L
         self.sections.append(self.soma)
 
-    def add_dendrite(self, name: str, n_section: int, section_names: List[str], diameters: List[float], Ls: List[float], soma_location: float):
+    def add_dendrites(self, name: str, n_section: int, section_names: List[str], diameters: List[float], Ls: List[float], soma_location: float):
         if not hasattr(self, "soma"):
             raise AttributeError("soma does not exist")
         if len(section_names) != n_section or len(diameters) != n_section or len(Ls) != n_section:
@@ -43,72 +43,61 @@ class Cell:
     def __repr__(self):
         return "{}[{}]".format(self.name, self._id)
 
-    def get_segs_by_name(self, name):
-        """Returns a list of sections whose .name matches the name parameter.
+    def get_sections_by_name(self, name: str):
+        if name == "all":
+            return self.sections
+        sections = []
+        for section in self.sections:
+            if section.name().endswith(name):
+                sections.append(section)
+        return sections
 
-        Parameters
-        ----------
-        name - str or list of str
-            The names to gets
+    def load_biophysics_from_file(self, path: str):
+        parameters: List[Parameter] = []
+        with open(path, "r") as f:
+            reader = csv.reader(f, delimiter="\t")
+            for row in reader:
+                if len(row) == 0 or row[0].startswith("#"):
+                    continue
+                if len(row) != 3:
+                    raise ValueError("Each row must have 3 columns")
+                
+                attribute_name = row[0]
+                section_name = row[1]
+                value = float(row[2])
 
-        Returns
-        -------
-        result - list
-            List of sections whose .name attribute matches the name parameter
+                parameters.append(Parameter(attribute_name, section_name, value))
 
-        Use cases
-        ---------
-        >>> self.get_segs_by_name('proxd')
-        Returns segments named 'proxd'
-        """
+        mechanisms_for_each_section = {}
+        for parameter in parameters:
+            if mechanisms_for_each_section.get(parameter.section_name) is None:
+                mechanisms_for_each_section[parameter.section_name] = []
+            
+            splited = parameter.attribute_name.split("_")
+            if len(splited) == 2:
+                mechanisms_for_each_section[parameter.section_name].append(splited[1])
 
-        if "all" in name:
-            return list(self.sections)
+        # initialize mechanisms for each section
+        for section_name, mechanisms in mechanisms_for_each_section.items():
+            sections = self.get_sections_by_name(section_name)
+            for section in sections:
+                for mechanism in mechanisms:
+                    section.insert(mechanism)
+        
+        # set section parameters
+        for parameter in parameters:
+            sections = self.get_sections_by_name(parameter.section_name)
+            for section in sections:
+                setattr(section, parameter.attribute_name, parameter.value)
 
-        result = []
-        if type(name) == str:
-            for section in self.sections:
-                if section.name().endswith(name):
-                    result.append(section)
-        else:
-            for name in name:
-                for section in self.sections:
-                    if section.name().endswith(name):
-                        result.append(name)
+class Parameter:
+    def __init__(self, attribute_name: str, section_name: str, value: float):
+        self.attribute_name = attribute_name
+        self.section_name = section_name
+        self.value = value
 
-        return np.array(result, dtype=np.dtype(object))
+    def __repr__(self):
+        return f'Parameter({self.attribute_name}, {self.section_name}, {self.value})'
 
-    def insert_mechs(self, parameters):
-        """Inserts the parameters into the section of the cells.
-        See ouropy.parameters
-
-        Parameters
-        ----------
-        parameters - ouropy.parameters.Parameter or ParameterSet
-            A parameter or parameterset contains the mechanism, the segment and
-            the value to assign.
-
-        Returns
-        -------
-        None
-
-        Use Cases
-        ---------
-        >>> import ouropy.parameters
-        >>> myParameters = ouropy.parameters.read_parameters(filename)
-        >>> self.insert_mechs(myParameters)
-        Insert the parameters loaded from filename into self. See
-        ouropy.parameters for details.
-        """
-        mechanisms = parameters.get_mechs()
-
-        for x in mechanisms.keys():
-            sections = self.get_segs_by_name(x)
-            for y in sections:
-                for z in mechanisms[x]:
-                    y.insert(z)
-
-        for x in parameters:
-            sections = self.get_segs_by_name(x.sec_name)
-            for y in sections:
-                setattr(y, x.mech_name, x.value)
+    def __str__(self):
+        return f'attribute: {self.attribute_name}, section: {self.section_name}, value: {self.value}'
