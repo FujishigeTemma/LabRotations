@@ -1,3 +1,5 @@
+TITLE ccanl.mod
+
 COMMENT
 	calcium accumulation into a volume of area*depth next to the
 	membrane with a decay (time constant tau) to resting level
@@ -27,9 +29,7 @@ PARAMETER {
   celsius = 6.3 (degC)
 	depth = 200 (nm)	: assume volume = area*depth
 	catau = 9 (ms)
-	caiinf = 50.e-6 (mM)	: takes precedence over cai0_ca_ion
-  : Do not forget to initialize in hoc if different
-  : from this default.
+	caiinf = 50.e-6 (mM)
 	cao = 2 (mM)
 	ica (mA/cm2)
 	inca (mA/cm2)
@@ -52,11 +52,6 @@ STATE {
 }
 
 INITIAL {
-	VERBATIM
-	ncai = _ion_ncai;
-	lcai = _ion_lcai;
-	tcai = _ion_tcai; 
-	ENDVERBATIM
 	ncai=caiinf/3
 	lcai=caiinf/3
 	tcai=caiinf/3

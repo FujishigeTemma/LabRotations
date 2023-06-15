@@ -83,10 +83,8 @@ extern "C" {
  /* external NEURON variables */
  extern double celsius;
  /* declaration of user functions */
- static void _hoc_alpl(void);
- static void _hoc_alpn(void);
- static void _hoc_betl(void);
- static void _hoc_betn(void);
+ static void _hoc_rateL(void);
+ static void _hoc_rateN(void);
  static void _hoc_rates(void);
  static int _mechtype;
 extern void _nrn_cacheloop_reg(int, int);
@@ -117,21 +115,15 @@ extern void hoc_reg_nmodl_filename(int, const char*);
  /* connect user functions to hoc names */
  static VoidFunc hoc_intfunc[] = {
  "setdata_borgka", _hoc_setdata,
- "alpl_borgka", _hoc_alpl,
- "alpn_borgka", _hoc_alpn,
- "betl_borgka", _hoc_betl,
- "betn_borgka", _hoc_betn,
+ "rateL_borgka", _hoc_rateL,
+ "rateN_borgka", _hoc_rateN,
  "rates_borgka", _hoc_rates,
  0, 0
 };
-#define alpl alpl_borgka
-#define alpn alpn_borgka
-#define betl betl_borgka
-#define betn betn_borgka
- extern double alpl( double );
- extern double alpn( double );
- extern double betl( double );
- extern double betn( double );
+#define rateL rateL_borgka
+#define rateN rateN_borgka
+ extern double rateL( double );
+ extern double rateN( double );
  /* declare global and static user variables */
 #define a0n a0n_borgka
  double a0n = 0.02;
@@ -188,10 +180,10 @@ extern void hoc_reg_nmodl_filename(int, const char*);
  "zetal_borgka", &zetal_borgka,
  "gmn_borgka", &gmn_borgka,
  "gml_borgka", &gml_borgka,
- "ninf_borgka", &ninf_borgka,
- "linf_borgka", &linf_borgka,
  "taul_borgka", &taul_borgka,
  "taun_borgka", &taun_borgka,
+ "ninf_borgka", &ninf_borgka,
+ "linf_borgka", &linf_borgka,
  0,0
 };
  static DoubVec hoc_vdoub[] = {
@@ -298,55 +290,29 @@ static int _ode_spec1(_threadargsproto_);
  static int _slist1[2], _dlist1[2];
  static int states(_threadargsproto_);
  
-double alpn (  double _lv ) {
-   double _lalpn;
- _lalpn = exp ( 1.e-3 * zetan * ( _lv - vhalfn ) * 9.648e4 / ( 8.315 * ( 273.16 + celsius ) ) ) ;
+double rateN (  double _lv ) {
+   double _lrateN;
+ _lrateN = exp ( 1e-3 * zetan * ( _lv - vhalfn ) * 9.648e4 / ( 8.315 * ( 273.16 + celsius ) ) ) ;
    
-return _lalpn;
+return _lrateN;
  }
  
-static void _hoc_alpn(void) {
+static void _hoc_rateN(void) {
   double _r;
-   _r =  alpn (  *getarg(1) );
+   _r =  rateN (  *getarg(1) );
  hoc_retpushx(_r);
 }
  
-double betn (  double _lv ) {
-   double _lbetn;
- _lbetn = exp ( 1.e-3 * zetan * gmn * ( _lv - vhalfn ) * 9.648e4 / ( 8.315 * ( 273.16 + celsius ) ) ) ;
+double rateL (  double _lv ) {
+   double _lrateL;
+ _lrateL = exp ( 1e-3 * zetal * ( _lv - vhalfl ) * 9.648e4 / ( 8.315 * ( 273.16 + celsius ) ) ) ;
    
-return _lbetn;
+return _lrateL;
  }
  
-static void _hoc_betn(void) {
+static void _hoc_rateL(void) {
   double _r;
-   _r =  betn (  *getarg(1) );
- hoc_retpushx(_r);
-}
- 
-double alpl (  double _lv ) {
-   double _lalpl;
- _lalpl = exp ( 1.e-3 * zetal * ( _lv - vhalfl ) * 9.648e4 / ( 8.315 * ( 273.16 + celsius ) ) ) ;
-   
-return _lalpl;
- }
- 
-static void _hoc_alpl(void) {
-  double _r;
-   _r =  alpl (  *getarg(1) );
- hoc_retpushx(_r);
-}
- 
-double betl (  double _lv ) {
-   double _lbetl;
- _lbetl = exp ( 1.e-3 * zetal * gml * ( _lv - vhalfl ) * 9.648e4 / ( 8.315 * ( 273.16 + celsius ) ) ) ;
-   
-return _lbetl;
- }
- 
-static void _hoc_betl(void) {
-  double _r;
-   _r =  betl (  *getarg(1) );
+   _r =  rateL (  *getarg(1) );
  hoc_retpushx(_r);
 }
  
@@ -376,14 +342,14 @@ static void _hoc_betl(void) {
 }
  
 static int  rates (  double _lv ) {
-   double _la , _lq10 ;
+   double _lalpha , _lq10 ;
  _lq10 = pow( 3.0 , ( ( celsius - 30.0 ) / 10.0 ) ) ;
-   _la = alpn ( _threadargscomma_ _lv ) ;
-   ninf = 1.0 / ( 1.0 + _la ) ;
-   taun = betn ( _threadargscomma_ _lv ) / ( _lq10 * a0n * ( 1.0 + _la ) ) ;
-   _la = alpl ( _threadargscomma_ _lv ) ;
-   linf = 1.0 / ( 1.0 + _la ) ;
-   taul = betl ( _threadargscomma_ _lv ) / ( _lq10 * a0l * ( 1.0 + _la ) ) ;
+   _lalpha = rateN ( _threadargscomma_ _lv ) ;
+   ninf = 1.0 / ( 1.0 + _lalpha ) ;
+   taun = 1.0 / ( _lq10 * a0n * ( 1.0 + _lalpha ) ) ;
+   _lalpha = rateL ( _threadargscomma_ _lv ) ;
+   linf = 1.0 / ( 1.0 + _lalpha ) ;
+   taul = 1.0 / ( _lq10 * a0l * ( 1.0 + _lalpha ) ) ;
     return 0; }
  
 static void _hoc_rates(void) {
@@ -567,7 +533,7 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
 {
   ek = _ion_ek;
  { error =  states();
- if(error){fprintf(stderr,"at line 52 in file borgka.mod:\n	SOLVE states METHOD cnexp\n"); nrn_complain(_p); abort_run(error);}
+ if(error){fprintf(stderr,"at line 51 in file borgka.mod:\n	SOLVE states METHOD cnexp\n"); nrn_complain(_p); abort_run(error);}
  } }}
 
 }
@@ -586,10 +552,10 @@ _first = 0;
 static const char* nmodl_filename = "/Users/temma/ghq/LabRotations/NCBC/src/mechanisms/borgka.mod";
 static const char* nmodl_file_text = 
   "TITLE Borg-Graham type generic K-A channel\n"
+  "\n"
   "UNITS {\n"
   "	(mA) = (milliamp)\n"
   "	(mV) = (millivolt)\n"
-  "\n"
   "}\n"
   "\n"
   "PARAMETER {\n"
@@ -607,12 +573,11 @@ static const char* nmodl_file_text =
   "  gml=1 (1)\n"
   "}\n"
   "\n"
-  "\n"
   "NEURON {\n"
   "	SUFFIX borgka\n"
   "	USEION k READ ek WRITE ik\n"
   "  RANGE gkabar,gka, ik\n"
-  "  GLOBAL ninf,linf,taul,taun\n"
+  "  GLOBAL ninf, linf, taul, taun\n"
   "}\n"
   "\n"
   "STATE {\n"
@@ -628,11 +593,11 @@ static const char* nmodl_file_text =
   "\n"
   "ASSIGNED {\n"
   "	ik (mA/cm2)\n"
-  "  ninf\n"
-  "  linf      \n"
+  "  gka\n"
   "  taul\n"
   "  taun\n"
-  "  gka\n"
+  "  ninf\n"
+  "  linf      \n"
   "}\n"
   "\n"
   "BREAKPOINT {\n"
@@ -641,39 +606,29 @@ static const char* nmodl_file_text =
   "	ik = gka*(v-ek)\n"
   "}\n"
   "\n"
-  "\n"
-  "FUNCTION alpn(v(mV)) {\n"
-  "  alpn = exp(1.e-3*zetan*(v-vhalfn)*9.648e4/(8.315*(273.16+celsius))) \n"
+  "FUNCTION rateN(v(mV)) {\n"
+  "  rateN = exp(1e-3 * zetan * (v - vhalfn) * 9.648e4 / (8.315 * (273.16 + celsius))) \n"
   "}\n"
   "\n"
-  "FUNCTION betn(v(mV)) {\n"
-  "  betn = exp(1.e-3*zetan*gmn*(v-vhalfn)*9.648e4/(8.315*(273.16+celsius))) \n"
-  "}\n"
-  "\n"
-  "FUNCTION alpl(v(mV)) {\n"
-  "  alpl = exp(1.e-3*zetal*(v-vhalfl)*9.648e4/(8.315*(273.16+celsius))) \n"
-  "}\n"
-  "\n"
-  "FUNCTION betl(v(mV)) {\n"
-  "  betl = exp(1.e-3*zetal*gml*(v-vhalfl)*9.648e4/(8.315*(273.16+celsius))) \n"
+  "FUNCTION rateL(v(mV)) {\n"
+  "  rateL = exp(1e-3 * zetal * (v - vhalfl) * 9.648e4 / (8.315 * (273.16 + celsius))) \n"
   "}\n"
   "\n"
   "DERIVATIVE states { \n"
   "  rates(v)\n"
-  "  n' = (ninf - n)/taun\n"
-  "  l' = (linf - l)/taul\n"
+  "  n' = (ninf - n) / taun\n"
+  "  l' = (linf - l) / taul\n"
   "}\n"
   "\n"
-  "PROCEDURE rates(v (mV)) { :callable from hoc\n"
-  "  LOCAL a,q10\n"
-  "  q10=3^((celsius-30)/10)\n"
-  "  a = alpn(v)\n"
-  "  ninf = 1/(1 + a)\n"
-  "  taun = betn(v)/(q10*a0n*(1+a))\n"
-  "  a = alpl(v)\n"
-  "  linf = 1/(1+ a)\n"
-  "  taul = betl(v)/(q10*a0l*(1 + a))\n"
+  "PROCEDURE rates(v (mV)) {\n"
+  "  LOCAL alpha, q10\n"
+  "  q10 = 3 ^ ((celsius - 30) / 10)\n"
+  "  alpha = rateN(v)\n"
+  "  ninf = 1 / (1 + alpha)\n"
+  "  taun = 1 / (q10 * a0n * (1 + alpha))\n"
+  "  alpha = rateL(v)\n"
+  "  linf = 1 / (1 + alpha)\n"
+  "  taul = 1 / (q10 * a0l * (1 + alpha))\n"
   "}\n"
-  "\n"
   ;
 #endif

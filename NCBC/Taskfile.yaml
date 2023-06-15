@@ -10,9 +10,9 @@ tasks:
     dir: src/mechanisms
     cmds:
       - rm -rf ../x86_64
-      - nrnivmodl
+      - rye run nrnivmodl
       - mv x86_64 ../x86_64
   run:
     dir: src
     cmds:
-      - rye run python main.py
+      - rye run python cli.py simulate-gap-junction -o ../outputs

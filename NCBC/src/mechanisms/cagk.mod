@@ -1,17 +1,12 @@
-TITLE CaGk
-: Calcium activated K channel.
+TITLE cagk.mod Calcium activated K channel.
 : Modified from Moczydlowski and Latorre (1983) J. Gen. Physiol. 82
 
 UNITS {
 	(molar) = (1/liter)
-}
-
-UNITS {
 	(mV) =	(millivolt)
 	(mA) =	(milliamp)
 	(mM) =	(millimolar)
 }
-
 
 NEURON {
 	SUFFIX cagk
@@ -24,24 +19,23 @@ NEURON {
 }
 
 UNITS {
-	FARADAY = (faraday)  (kilocoulombs)
+	FARADAY = (faraday) (kilocoulombs)
 	R = 8.313424 (joule/degC)
 }
 
 PARAMETER {
-	celsius		(degC)
-	v		(mV)
-	gkbar=.01	(mho/cm2)	: Maximum Permeability
+	celsius (degC)
+	v (mV)
+	gkbar=.01	(mho/cm2)
 	cai = 5.e-5	(mM)
-	ek		(mV)
-
+	ek (mV)
 	d1 = .84
 	d2 = 1.
 	k1 = .48e-3	(mM)
 	k2 = .13e-6	(mM)
-	abar = .28	(/ms)
-	bbar = .48	(/ms)
-  st=1 (1)
+	abar = .28 (/ms)
+	bbar = .48 (/ms)
+	st=1 (1)
 	lcai (mV)
 	ncai (mV)
 	tcai (mV)
@@ -56,11 +50,13 @@ ASSIGNED {
 
 INITIAL {
 	cai = ncai + lcai + tcai
-  rate(v, cai)
-  o = oinf
+	rate(v, cai)
+	o = oinf
 }
 
-STATE {	o }		: fraction of open channels
+STATE {
+	o
+}
 
 BREAKPOINT {
 	SOLVE state METHOD cnexp
@@ -68,27 +64,26 @@ BREAKPOINT {
 	ik = gkca*(v - ek)
 }
 
-DERIVATIVE state {	: exact when v held constant; integrates over dt step
+DERIVATIVE state {
 	rate(v, cai)
 	o' = (oinf - o)/otau
 }
 
-FUNCTION alp(v (mV), c (mM)) (1/ms) { :callable from hoc
-	alp = c*abar/(c + exp1(k1,d1,v))
+FUNCTION alpha(v (mV), c (mM)) (1/ms) {
+	alpha = c * abar/(c + expTerm(k1,d1,v))
 }
 
-FUNCTION bet(v (mV), c (mM)) (1/ms) { :callable from hoc
-	bet = bbar/(1 + c/exp1(k2,d2,v))
+FUNCTION beta(v (mV), c (mM)) (1/ms) {
+	beta = bbar/(1 + c/expTerm(k2,d2,v))
 }
 
-FUNCTION exp1(k (mM), d, v (mV)) (mM) { :callable from hoc
-	exp1 = k*exp(-2*d*FARADAY*v/R/(273.15 + celsius))
+FUNCTION expTerm(k (mM), d, v (mV)) (mM) {
+	expTerm = k*exp(-2*d*FARADAY*v/R/(273.15 + celsius))
 }
 
-PROCEDURE rate(v (mV), c (mM)) { :callable from hoc
+PROCEDURE rate(v (mV), c (mM)) {
 	LOCAL a
-	a = alp(v, c)
-	otau = 1/(a + bet(v, c))
+	a = alpha(v, c)
+	otau = 1/(a + beta(v, c))
 	oinf = a*otau
 }
-

@@ -86,8 +86,8 @@ extern "C" {
  extern double celsius;
  /* declaration of user functions */
  static void _hoc_KTF(void);
- static void _hoc_alp(void);
- static void _hoc_bet(void);
+ static void _hoc_alpha(void);
+ static void _hoc_beta(void);
  static void _hoc_efun(void);
  static void _hoc_ghk(void);
  static void _hoc_h2(void);
@@ -122,8 +122,8 @@ extern void hoc_reg_nmodl_filename(int, const char*);
  static VoidFunc hoc_intfunc[] = {
  "setdata_lca", _hoc_setdata,
  "KTF_lca", _hoc_KTF,
- "alp_lca", _hoc_alp,
- "bet_lca", _hoc_bet,
+ "alpha_lca", _hoc_alpha,
+ "beta_lca", _hoc_beta,
  "efun_lca", _hoc_efun,
  "ghk_lca", _hoc_ghk,
  "h2_lca", _hoc_h2,
@@ -131,18 +131,18 @@ extern void hoc_reg_nmodl_filename(int, const char*);
  0, 0
 };
 #define KTF KTF_lca
-#define _f_bet _f_bet_lca
-#define _f_alp _f_alp_lca
-#define alp alp_lca
-#define bet bet_lca
+#define _f_beta _f_beta_lca
+#define _f_alpha _f_alpha_lca
+#define alpha alpha_lca
+#define beta beta_lca
 #define efun efun_lca
 #define ghk ghk_lca
 #define h2 h2_lca
  extern double KTF( double );
- extern double _f_bet( double );
- extern double _f_alp( double );
- extern double alp( double );
- extern double bet( double );
+ extern double _f_beta( double );
+ extern double _f_alpha( double );
+ extern double alpha( double );
+ extern double beta( double );
  extern double efun( double );
  extern double ghk( double , double , double );
  extern double h2( double );
@@ -176,8 +176,8 @@ extern void hoc_reg_nmodl_filename(int, const char*);
  static DoubScal hoc_scdoub[] = {
  "ki_lca", &ki_lca,
  "tfa_lca", &tfa_lca,
- "minf_lca", &minf_lca,
  "matu_lca", &matu_lca,
+ "minf_lca", &minf_lca,
  "usetable_lca", &usetable_lca,
  0,0
 };
@@ -281,10 +281,10 @@ extern void _cvode_abstol( Symbol**, double*, int);
  static double FARADAY = 96520.0;
  static double R = 8.3134;
  static double KTOMV = .0853;
- static double *_t_alp;
- static double *_t_bet;
+ static double *_t_alpha;
+ static double *_t_beta;
 static int _reset;
-static char *modelname = "l-calcium channel";
+static char *modelname = "lca.mod l-type calcium ion channel";
 
 static int error;
 static int _ninits = 0;
@@ -296,8 +296,8 @@ static int _ode_spec1(_threadargsproto_);
 /*static int _ode_matsol1(_threadargsproto_);*/
  static int _slist1[1], _dlist1[1];
  static int state(_threadargsproto_);
- static double _n_bet(double);
- static double _n_alp(double);
+ static double _n_beta(double);
+ static double _n_alpha(double);
  
 double h2 (  double _lcai ) {
    double _lh2;
@@ -358,106 +358,106 @@ static void _hoc_efun(void) {
    _r =  efun (  *getarg(1) );
  hoc_retpushx(_r);
 }
- static double _mfac_alp, _tmin_alp;
- static void _check_alp();
- static void _check_alp() {
+ static double _mfac_alpha, _tmin_alpha;
+ static void _check_alpha();
+ static void _check_alpha() {
   static int _maktable=1; int _i, _j, _ix = 0;
   double _xi, _tmax;
   if (!usetable) {return;}
   if (_maktable) { double _x, _dx; _maktable=0;
-   _tmin_alp =  - 150.0 ;
+   _tmin_alpha =  - 150.0 ;
    _tmax =  150.0 ;
-   _dx = (_tmax - _tmin_alp)/200.; _mfac_alp = 1./_dx;
-   for (_i=0, _x=_tmin_alp; _i < 201; _x += _dx, _i++) {
-    _t_alp[_i] = _f_alp(_x);
+   _dx = (_tmax - _tmin_alpha)/200.; _mfac_alpha = 1./_dx;
+   for (_i=0, _x=_tmin_alpha; _i < 201; _x += _dx, _i++) {
+    _t_alpha[_i] = _f_alpha(_x);
    }
   }
  }
 
- double alp(double _lv){ _check_alp();
- return _n_alp(_lv);
+ double alpha(double _lv){ _check_alpha();
+ return _n_alpha(_lv);
  }
 
- static double _n_alp(double _lv){ int _i, _j;
+ static double _n_alpha(double _lv){ int _i, _j;
  double _xi, _theta;
  if (!usetable) {
- return _f_alp(_lv); 
+ return _f_alpha(_lv); 
 }
- _xi = _mfac_alp * (_lv - _tmin_alp);
+ _xi = _mfac_alpha * (_lv - _tmin_alpha);
  if (isnan(_xi)) {
   return _xi; }
  if (_xi <= 0.) {
- return _t_alp[0];
+ return _t_alpha[0];
  }
  if (_xi >= 200.) {
- return _t_alp[200];
+ return _t_alpha[200];
  }
  _i = (int) _xi;
- return _t_alp[_i] + (_xi - (double)_i)*(_t_alp[_i+1] - _t_alp[_i]);
+ return _t_alpha[_i] + (_xi - (double)_i)*(_t_alpha[_i+1] - _t_alpha[_i]);
  }
 
  
-double _f_alp (  double _lv ) {
-   double _lalp;
- _lalp = 15.69 * ( - 1.0 * _lv + 81.5 ) / ( exp ( ( - 1.0 * _lv + 81.5 ) / 10.0 ) - 1.0 ) ;
+double _f_alpha (  double _lv ) {
+   double _lalpha;
+ _lalpha = 15.69 * ( - 1.0 * _lv + 81.5 ) / ( exp ( ( - 1.0 * _lv + 81.5 ) / 10.0 ) - 1.0 ) ;
    
-return _lalp;
+return _lalpha;
  }
  
-static void _hoc_alp(void) {
+static void _hoc_alpha(void) {
   double _r;
-    _r =  alp (  *getarg(1) );
+    _r =  alpha (  *getarg(1) );
  hoc_retpushx(_r);
 }
- static double _mfac_bet, _tmin_bet;
- static void _check_bet();
- static void _check_bet() {
+ static double _mfac_beta, _tmin_beta;
+ static void _check_beta();
+ static void _check_beta() {
   static int _maktable=1; int _i, _j, _ix = 0;
   double _xi, _tmax;
   if (!usetable) {return;}
   if (_maktable) { double _x, _dx; _maktable=0;
-   _tmin_bet =  - 150.0 ;
+   _tmin_beta =  - 150.0 ;
    _tmax =  150.0 ;
-   _dx = (_tmax - _tmin_bet)/200.; _mfac_bet = 1./_dx;
-   for (_i=0, _x=_tmin_bet; _i < 201; _x += _dx, _i++) {
-    _t_bet[_i] = _f_bet(_x);
+   _dx = (_tmax - _tmin_beta)/200.; _mfac_beta = 1./_dx;
+   for (_i=0, _x=_tmin_beta; _i < 201; _x += _dx, _i++) {
+    _t_beta[_i] = _f_beta(_x);
    }
   }
  }
 
- double bet(double _lv){ _check_bet();
- return _n_bet(_lv);
+ double beta(double _lv){ _check_beta();
+ return _n_beta(_lv);
  }
 
- static double _n_bet(double _lv){ int _i, _j;
+ static double _n_beta(double _lv){ int _i, _j;
  double _xi, _theta;
  if (!usetable) {
- return _f_bet(_lv); 
+ return _f_beta(_lv); 
 }
- _xi = _mfac_bet * (_lv - _tmin_bet);
+ _xi = _mfac_beta * (_lv - _tmin_beta);
  if (isnan(_xi)) {
   return _xi; }
  if (_xi <= 0.) {
- return _t_bet[0];
+ return _t_beta[0];
  }
  if (_xi >= 200.) {
- return _t_bet[200];
+ return _t_beta[200];
  }
  _i = (int) _xi;
- return _t_bet[_i] + (_xi - (double)_i)*(_t_bet[_i+1] - _t_bet[_i]);
+ return _t_beta[_i] + (_xi - (double)_i)*(_t_beta[_i+1] - _t_beta[_i]);
  }
 
  
-double _f_bet (  double _lv ) {
-   double _lbet;
- _lbet = 0.29 * exp ( - _lv / 10.86 ) ;
+double _f_beta (  double _lv ) {
+   double _lbeta;
+ _lbeta = 0.29 * exp ( - _lv / 10.86 ) ;
    
-return _lbet;
+return _lbeta;
  }
  
-static void _hoc_bet(void) {
+static void _hoc_beta(void) {
   double _r;
-    _r =  bet (  *getarg(1) );
+    _r =  beta (  *getarg(1) );
  hoc_retpushx(_r);
 }
  
@@ -485,8 +485,8 @@ static void _hoc_bet(void) {
  
 static int  rate (  double _lv ) {
    double _la ;
- _la = alp ( _threadargscomma_ _lv ) ;
-   matu = 1.0 / ( tfa * ( _la + bet ( _threadargscomma_ _lv ) ) ) ;
+ _la = alpha ( _threadargscomma_ _lv ) ;
+   matu = 1.0 / ( tfa * ( _la + beta ( _threadargscomma_ _lv ) ) ) ;
    minf = tfa * _la * matu ;
     return 0; }
  
@@ -559,10 +559,7 @@ static void initmodel() {
  {
    rate ( _threadargscomma_ v ) ;
    m = minf ;
-   
-/*VERBATIM*/
-	cai=_ion_cai;
- }
+   }
   _sav_indep = t; t = _save;
 
 }
@@ -684,7 +681,7 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
   cai = _ion_cai;
   cao = _ion_cao;
  { error =  state();
- if(error){fprintf(stderr,"at line 55 in file lca.mod:\n	SOLVE state METHOD cnexp\n"); nrn_complain(_p); abort_run(error);}
+ if(error){fprintf(stderr,"at line 50 in file lca.mod:\n	SOLVE state METHOD cnexp\n"); nrn_complain(_p); abort_run(error);}
  } }}
 
 }
@@ -694,8 +691,8 @@ static void terminal(){}
 static void _initlists() {
  int _i; static int _first = 1;
   if (!_first) return;
-   _t_alp = makevector(201*sizeof(double));
-   _t_bet = makevector(201*sizeof(double));
+   _t_alpha = makevector(201*sizeof(double));
+   _t_beta = makevector(201*sizeof(double));
  _slist1[0] = m_columnindex;  _dlist1[0] = Dm_columnindex;
 _first = 0;
 }
@@ -703,9 +700,7 @@ _first = 0;
 #if NMODL_TEXT
 static const char* nmodl_filename = "/Users/temma/ghq/LabRotations/NCBC/src/mechanisms/lca.mod";
 static const char* nmodl_file_text = 
-  "TITLE l-calcium channel\n"
-  ": l-type calcium channel\n"
-  "\n"
+  "TITLE lca.mod l-type calcium ion channel\n"
   "\n"
   "UNITS {\n"
   "	(mA) = (milliamp)\n"
@@ -721,10 +716,10 @@ static const char* nmodl_file_text =
   "	v (mV)\n"
   "	celsius (degC)\n"
   "	glcabar (mho/cm2)\n"
-  "	ki=.001 (mM)\n"
+  "	ki = .001 (mM)\n"
   "	cai (mM)\n"
   "	cao (mM)\n"
-  "  tfa=1\n"
+  "  tfa = 1\n"
   "}\n"
   "\n"
   "\n"
@@ -733,7 +728,7 @@ static const char* nmodl_file_text =
   "	USEION lca READ elca WRITE ilca VALENCE 2\n"
   "	USEION ca READ cai, cao VALENCE 2 \n"
   "  RANGE glcabar, cai, ilca, elca\n"
-  "  GLOBAL minf,matu\n"
+  "  GLOBAL minf, matu\n"
   "}\n"
   "\n"
   "STATE {\n"
@@ -743,17 +738,14 @@ static const char* nmodl_file_text =
   "ASSIGNED {\n"
   "	ilca (mA/cm2)\n"
   "  glca (mho/cm2)\n"
-  "  minf\n"
   "  matu (ms)\n"
   "	elca (mV)   \n"
+  "  minf\n"
   "}\n"
   "\n"
   "INITIAL {\n"
   "	rate(v)\n"
   "	m = minf\n"
-  "	VERBATIM\n"
-  "	cai=_ion_cai;\n"
-  "	ENDVERBATIM\n"
   "}\n"
   "\n"
   "BREAKPOINT {\n"
@@ -773,7 +765,7 @@ static const char* nmodl_file_text =
   "\n"
   "  f = KTF(celsius)/2\n"
   "  nu = v/f\n"
-  "  ghk=-f*(1. - (ci/co)*exp(nu))*efun(nu)\n"
+  "  ghk = -f * (1. - (ci/co)*exp(nu)) * efun(nu)\n"
   "}\n"
   "\n"
   "FUNCTION KTF(celsius (DegC)) (mV) {\n"
@@ -785,18 +777,18 @@ static const char* nmodl_file_text =
   "	if (fabs(z) < 1e-4) {\n"
   "		efun = 1 - z/2\n"
   "	}else{\n"
-  "		efun = z/(exp(z) - 1)\n"
+  "		efun = z / (exp(z) - 1)\n"
   "	}\n"
   "}\n"
   "\n"
-  "FUNCTION alp(v(mV)) (1/ms) {\n"
+  "FUNCTION alpha(v(mV)) (1/ms) {\n"
   "	TABLE FROM -150 TO 150 WITH 200\n"
-  "	alp = 15.69*(-1.0*v+81.5)/(exp((-1.0*v+81.5)/10.0)-1.0)\n"
+  "	alpha = 15.69*(-1.0*v+81.5)/(exp((-1.0*v+81.5)/10.0)-1.0)\n"
   "}\n"
   "\n"
-  "FUNCTION bet(v(mV)) (1/ms) {\n"
+  "FUNCTION beta(v(mV)) (1/ms) {\n"
   "	TABLE FROM -150 TO 150 WITH 200\n"
-  "	bet = 0.29*exp(-v/10.86)\n"
+  "	beta = 0.29*exp(-v/10.86)\n"
   "}\n"
   "\n"
   "DERIVATIVE state {  \n"
@@ -804,10 +796,10 @@ static const char* nmodl_file_text =
   "  m' = (minf - m)/matu\n"
   "}\n"
   "\n"
-  "PROCEDURE rate(v (mV)) { :callable from hoc\n"
+  "PROCEDURE rate(v (mV)) {\n"
   "  LOCAL a\n"
-  "  a = alp(v)\n"
-  "  matu = 1/(tfa*(a + bet(v)))\n"
+  "  a = alpha(v)\n"
+  "  matu = 1 / (tfa * (a + beta(v)))\n"
   "  minf = tfa*a*matu\n"
   "}\n"
   ;

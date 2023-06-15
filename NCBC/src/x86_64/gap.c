@@ -215,7 +215,7 @@ extern void _cvode_abstol( Symbol**, double*, int);
  hoc_register_units(_mechtype, _hoc_parm_units);
  }
 static int _reset;
-static char *modelname = "";
+static char *modelname = "gap.mod";
 
 static int error;
 static int _ninits = 0;
@@ -332,21 +332,26 @@ _first = 0;
 #if NMODL_TEXT
 static const char* nmodl_filename = "/Users/temma/ghq/LabRotations/NCBC/src/mechanisms/gap.mod";
 static const char* nmodl_file_text = 
+  "TITLE gap.mod\n"
+  "\n"
   "NEURON {\n"
   "	POINT_PROCESS gap\n"
   "	NONSPECIFIC_CURRENT i\n"
   "	RANGE r, i, delay\n"
   "	POINTER v_pair\n"
   "}\n"
+  "\n"
   "PARAMETER {\n"
   "	v (millivolt)\n"
   "	v_pair (millivolt)\n"
   "	r = 1e10 (megohm)\n"
   "	delay (ms)\n"
   "}\n"
+  "\n"
   "ASSIGNED {\n"
   "	i (nanoamp)\n"
   "}\n"
+  "\n"
   "BREAKPOINT {\n"
   "	if (t > delay) {\n"
   "		i = (v - v_pair)/r\n"

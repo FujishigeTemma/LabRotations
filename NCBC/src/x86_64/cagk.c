@@ -88,9 +88,9 @@ extern "C" {
  /* external NEURON variables */
  extern double celsius;
  /* declaration of user functions */
- static void _hoc_alp(void);
- static void _hoc_bet(void);
- static void _hoc_exp1(void);
+ static void _hoc_alpha(void);
+ static void _hoc_beta(void);
+ static void _hoc_expTerm(void);
  static void _hoc_rate(void);
  static int _mechtype;
 extern void _nrn_cacheloop_reg(int, int);
@@ -121,18 +121,18 @@ extern void hoc_reg_nmodl_filename(int, const char*);
  /* connect user functions to hoc names */
  static VoidFunc hoc_intfunc[] = {
  "setdata_cagk", _hoc_setdata,
- "alp_cagk", _hoc_alp,
- "bet_cagk", _hoc_bet,
- "exp1_cagk", _hoc_exp1,
+ "alpha_cagk", _hoc_alpha,
+ "beta_cagk", _hoc_beta,
+ "expTerm_cagk", _hoc_expTerm,
  "rate_cagk", _hoc_rate,
  0, 0
 };
-#define alp alp_cagk
-#define bet bet_cagk
-#define exp1 exp1_cagk
- extern double alp( double , double );
- extern double bet( double , double );
- extern double exp1( double , double , double );
+#define alpha alpha_cagk
+#define beta beta_cagk
+#define expTerm expTerm_cagk
+ extern double alpha( double , double );
+ extern double beta( double , double );
+ extern double expTerm( double , double , double );
  /* declare global and static user variables */
 #define abar abar_cagk
  double abar = 0.28;
@@ -303,7 +303,7 @@ extern void _cvode_abstol( Symbol**, double*, int);
 static double _nrnunit_FARADAY[2] = {0x1.81f0fae775425p+6, 96.4853}; /* 96.4853321233100161 */
  static double R = 8.313424;
 static int _reset;
-static char *modelname = "CaGk";
+static char *modelname = "cagk.mod Calcium activated K channel.";
 
 static int error;
 static int _ninits = 0;
@@ -338,49 +338,49 @@ static int _ode_spec1(_threadargsproto_);
   return 0;
 }
  
-double alp (  double _lv , double _lc ) {
-   double _lalp;
- _lalp = _lc * abar / ( _lc + exp1 ( _threadargscomma_ k1 , d1 , _lv ) ) ;
+double alpha (  double _lv , double _lc ) {
+   double _lalpha;
+ _lalpha = _lc * abar / ( _lc + expTerm ( _threadargscomma_ k1 , d1 , _lv ) ) ;
    
-return _lalp;
+return _lalpha;
  }
  
-static void _hoc_alp(void) {
+static void _hoc_alpha(void) {
   double _r;
-   _r =  alp (  *getarg(1) , *getarg(2) );
+   _r =  alpha (  *getarg(1) , *getarg(2) );
  hoc_retpushx(_r);
 }
  
-double bet (  double _lv , double _lc ) {
-   double _lbet;
- _lbet = bbar / ( 1.0 + _lc / exp1 ( _threadargscomma_ k2 , d2 , _lv ) ) ;
+double beta (  double _lv , double _lc ) {
+   double _lbeta;
+ _lbeta = bbar / ( 1.0 + _lc / expTerm ( _threadargscomma_ k2 , d2 , _lv ) ) ;
    
-return _lbet;
+return _lbeta;
  }
  
-static void _hoc_bet(void) {
+static void _hoc_beta(void) {
   double _r;
-   _r =  bet (  *getarg(1) , *getarg(2) );
+   _r =  beta (  *getarg(1) , *getarg(2) );
  hoc_retpushx(_r);
 }
  
-double exp1 (  double _lk , double _ld , double _lv ) {
-   double _lexp1;
- _lexp1 = _lk * exp ( - 2.0 * _ld * FARADAY * _lv / R / ( 273.15 + celsius ) ) ;
+double expTerm (  double _lk , double _ld , double _lv ) {
+   double _lexpTerm;
+ _lexpTerm = _lk * exp ( - 2.0 * _ld * FARADAY * _lv / R / ( 273.15 + celsius ) ) ;
    
-return _lexp1;
+return _lexpTerm;
  }
  
-static void _hoc_exp1(void) {
+static void _hoc_expTerm(void) {
   double _r;
-   _r =  exp1 (  *getarg(1) , *getarg(2) , *getarg(3) );
+   _r =  expTerm (  *getarg(1) , *getarg(2) , *getarg(3) );
  hoc_retpushx(_r);
 }
  
 static int  rate (  double _lv , double _lc ) {
    double _la ;
- _la = alp ( _threadargscomma_ _lv , _lc ) ;
-   otau = 1.0 / ( _la + bet ( _threadargscomma_ _lv , _lc ) ) ;
+ _la = alpha ( _threadargscomma_ _lv , _lc ) ;
+   otau = 1.0 / ( _la + beta ( _threadargscomma_ _lv , _lc ) ) ;
    oinf = _la * otau ;
     return 0; }
  
@@ -582,7 +582,7 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
   tcai = _ion_tcai;
   ek = _ion_ek;
  { error =  state();
- if(error){fprintf(stderr,"at line 66 in file cagk.mod:\n	SOLVE state METHOD cnexp\n"); nrn_complain(_p); abort_run(error);}
+ if(error){fprintf(stderr,"at line 62 in file cagk.mod:\n	SOLVE state METHOD cnexp\n"); nrn_complain(_p); abort_run(error);}
  } }}
 
 }
@@ -599,20 +599,15 @@ _first = 0;
 #if NMODL_TEXT
 static const char* nmodl_filename = "/Users/temma/ghq/LabRotations/NCBC/src/mechanisms/cagk.mod";
 static const char* nmodl_file_text = 
-  "TITLE CaGk\n"
-  ": Calcium activated K channel.\n"
+  "TITLE cagk.mod Calcium activated K channel.\n"
   ": Modified from Moczydlowski and Latorre (1983) J. Gen. Physiol. 82\n"
   "\n"
   "UNITS {\n"
   "	(molar) = (1/liter)\n"
-  "}\n"
-  "\n"
-  "UNITS {\n"
   "	(mV) =	(millivolt)\n"
   "	(mA) =	(milliamp)\n"
   "	(mM) =	(millimolar)\n"
   "}\n"
-  "\n"
   "\n"
   "NEURON {\n"
   "	SUFFIX cagk\n"
@@ -625,24 +620,23 @@ static const char* nmodl_file_text =
   "}\n"
   "\n"
   "UNITS {\n"
-  "	FARADAY = (faraday)  (kilocoulombs)\n"
+  "	FARADAY = (faraday) (kilocoulombs)\n"
   "	R = 8.313424 (joule/degC)\n"
   "}\n"
   "\n"
   "PARAMETER {\n"
-  "	celsius		(degC)\n"
-  "	v		(mV)\n"
-  "	gkbar=.01	(mho/cm2)	: Maximum Permeability\n"
+  "	celsius (degC)\n"
+  "	v (mV)\n"
+  "	gkbar=.01	(mho/cm2)\n"
   "	cai = 5.e-5	(mM)\n"
-  "	ek		(mV)\n"
-  "\n"
+  "	ek (mV)\n"
   "	d1 = .84\n"
   "	d2 = 1.\n"
   "	k1 = .48e-3	(mM)\n"
   "	k2 = .13e-6	(mM)\n"
-  "	abar = .28	(/ms)\n"
-  "	bbar = .48	(/ms)\n"
-  "  st=1 (1)\n"
+  "	abar = .28 (/ms)\n"
+  "	bbar = .48 (/ms)\n"
+  "	st=1 (1)\n"
   "	lcai (mV)\n"
   "	ncai (mV)\n"
   "	tcai (mV)\n"
@@ -657,11 +651,13 @@ static const char* nmodl_file_text =
   "\n"
   "INITIAL {\n"
   "	cai = ncai + lcai + tcai\n"
-  "  rate(v, cai)\n"
-  "  o = oinf\n"
+  "	rate(v, cai)\n"
+  "	o = oinf\n"
   "}\n"
   "\n"
-  "STATE {	o }		: fraction of open channels\n"
+  "STATE {\n"
+  "	o\n"
+  "}\n"
   "\n"
   "BREAKPOINT {\n"
   "	SOLVE state METHOD cnexp\n"
@@ -669,29 +665,28 @@ static const char* nmodl_file_text =
   "	ik = gkca*(v - ek)\n"
   "}\n"
   "\n"
-  "DERIVATIVE state {	: exact when v held constant; integrates over dt step\n"
+  "DERIVATIVE state {\n"
   "	rate(v, cai)\n"
   "	o' = (oinf - o)/otau\n"
   "}\n"
   "\n"
-  "FUNCTION alp(v (mV), c (mM)) (1/ms) { :callable from hoc\n"
-  "	alp = c*abar/(c + exp1(k1,d1,v))\n"
+  "FUNCTION alpha(v (mV), c (mM)) (1/ms) {\n"
+  "	alpha = c * abar/(c + expTerm(k1,d1,v))\n"
   "}\n"
   "\n"
-  "FUNCTION bet(v (mV), c (mM)) (1/ms) { :callable from hoc\n"
-  "	bet = bbar/(1 + c/exp1(k2,d2,v))\n"
+  "FUNCTION beta(v (mV), c (mM)) (1/ms) {\n"
+  "	beta = bbar/(1 + c/expTerm(k2,d2,v))\n"
   "}\n"
   "\n"
-  "FUNCTION exp1(k (mM), d, v (mV)) (mM) { :callable from hoc\n"
-  "	exp1 = k*exp(-2*d*FARADAY*v/R/(273.15 + celsius))\n"
+  "FUNCTION expTerm(k (mM), d, v (mV)) (mM) {\n"
+  "	expTerm = k*exp(-2*d*FARADAY*v/R/(273.15 + celsius))\n"
   "}\n"
   "\n"
-  "PROCEDURE rate(v (mV), c (mM)) { :callable from hoc\n"
+  "PROCEDURE rate(v (mV), c (mM)) {\n"
   "	LOCAL a\n"
-  "	a = alp(v, c)\n"
-  "	otau = 1/(a + bet(v, c))\n"
+  "	a = alpha(v, c)\n"
+  "	otau = 1/(a + beta(v, c))\n"
   "	oinf = a*otau\n"
   "}\n"
-  "\n"
   ;
 #endif

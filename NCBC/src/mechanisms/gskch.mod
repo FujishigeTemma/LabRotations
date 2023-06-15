@@ -1,9 +1,7 @@
-TITLE gskch.mod  calcium-activated potassium channel (non-voltage-dependent)
+TITLE gskch.mod small conductance calcium-activated potassium channels in granule cell dendrites
 
 COMMENT
-
-gsk granule
-
+SK channel in granule cell dendrites
 ENDCOMMENT
 
 UNITS {
@@ -36,16 +34,18 @@ PARAMETER {
 	tcai (mM)
 }
 
-STATE { q }
+STATE {
+	q
+}
 
 ASSIGNED {
-	isk (mA/cm2) gsk (mho/cm2) qinf qtau (ms) qexp
+	isk (mA/cm2) gsk (mho/cm2) qinf qtau (ms)
 }
 
 
-BREAKPOINT { :Computes i=g*q^2*(v-esk)
+BREAKPOINT {
 	SOLVE state
-  gsk = gskbar * q*q
+	gsk = gskbar * q*q
 	isk = gsk * (v-esk)
 }
 
@@ -53,41 +53,27 @@ UNITSOFF
 
 INITIAL {
 	cai = ncai + lcai + tcai	
-	rate(cai)
-	q=qinf
-	VERBATIM
-	ncai = _ion_ncai;
-	lcai = _ion_lcai;
-	tcai = _ion_tcai;
-	ENDVERBATIM
-}
-
-
-PROCEDURE state() {  :Computes state variable q at current v and dt.
-	cai = ncai + lcai + tcai
-	rate(cai)
-	q = q + (qinf-q) * qexp
-	VERBATIM
-	return 0;
-	ENDVERBATIM
+	calcRate(cai)
+	q = qinf
 }
 
 LOCAL q10
-PROCEDURE rate(cai) {  :Computes rate and other constants at current v.
-	LOCAL alpha, beta, tinc
+
+PROCEDURE state() {
+	cai = ncai + lcai + tcai
+	calcRate(cai)
+	q = q + (qinf - q) * (1 - exp(-dt*q10/qtau) * q10)
+}
+
+PROCEDURE calcRate(cai) {
+	LOCAL alpha, beta
 	q10 = 3^((celsius - 6.3)/10)
-  :"q" activation system
+  
   alpha = 1.25e1 * cai * cai
   beta = 0.00025 
 
-:	alpha = 0.00246/exp((12*log10(cai)+28.48)/-4.5)
-:	beta = 0.006/exp((12*log10(cai)+60.4)/35)
-: alpha = 0.00246/fctrap(cai)
-: beta = 0.006/fctrap(cai)
 	qtau = 1 / (alpha + beta)
 	qinf = alpha * qtau
-	tinc = -dt*q10
-	qexp = 1 - exp(tinc/qtau)*q10
 }
 
 UNITSON

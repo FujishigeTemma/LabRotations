@@ -1,6 +1,6 @@
 /* Created by Language version: 7.7.0 */
-/* NOT VECTORIZED */
-#define NRN_VECTORIZED 0
+/* VECTORIZED */
+#define NRN_VECTORIZED 1
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -29,24 +29,22 @@ extern double hoc_Exp(double);
 #define nrn_jacob _nrn_jacob__ichan2
 #define nrn_state _nrn_state__ichan2
 #define _net_receive _net_receive__ichan2 
-#define _f_trates _f_trates__ichan2 
-#define rates rates__ichan2 
-#define states states__ichan2 
-#define trates trates__ichan2 
+#define calcRates calcRates__ichan2 
+#define state state__ichan2 
  
-#define _threadargscomma_ /**/
-#define _threadargsprotocomma_ /**/
-#define _threadargs_ /**/
-#define _threadargsproto_ /**/
+#define _threadargscomma_ _p, _ppvar, _thread, _nt,
+#define _threadargsprotocomma_ double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt,
+#define _threadargs_ _p, _ppvar, _thread, _nt
+#define _threadargsproto_ double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt
  	/*SUPPRESS 761*/
 	/*SUPPRESS 762*/
 	/*SUPPRESS 763*/
 	/*SUPPRESS 765*/
 	 extern double *getarg();
- static double *_p; static Datum *_ppvar;
+ /* Thread safe. No static _p or _ppvar. */
  
-#define t nrn_threads->_t
-#define dt nrn_threads->_dt
+#define t _nt->_t
+#define dt _nt->_dt
 #define gnatbar _p[0]
 #define gnatbar_columnindex 0
 #define gkfbar _p[1]
@@ -71,22 +69,22 @@ extern double hoc_Exp(double);
 #define iks_columnindex 10
 #define il _p[11]
 #define il_columnindex 11
-#define minf _p[12]
-#define minf_columnindex 12
-#define hinf _p[13]
-#define hinf_columnindex 13
-#define nfinf _p[14]
-#define nfinf_columnindex 14
-#define nsinf _p[15]
-#define nsinf_columnindex 15
-#define mtau _p[16]
-#define mtau_columnindex 16
-#define htau _p[17]
-#define htau_columnindex 17
-#define nftau _p[18]
-#define nftau_columnindex 18
-#define nstau _p[19]
-#define nstau_columnindex 19
+#define mtau _p[12]
+#define mtau_columnindex 12
+#define htau _p[13]
+#define htau_columnindex 13
+#define nftau _p[14]
+#define nftau_columnindex 14
+#define nstau _p[15]
+#define nstau_columnindex 15
+#define minf _p[16]
+#define minf_columnindex 16
+#define hinf _p[17]
+#define hinf_columnindex 17
+#define nfinf _p[18]
+#define nfinf_columnindex 18
+#define nsinf _p[19]
+#define nsinf_columnindex 19
 #define m _p[20]
 #define m_columnindex 20
 #define h _p[21]
@@ -109,16 +107,10 @@ extern double hoc_Exp(double);
 #define Dnf_columnindex 29
 #define Dns _p[30]
 #define Dns_columnindex 30
-#define mexp _p[31]
-#define mexp_columnindex 31
-#define hexp _p[32]
-#define hexp_columnindex 32
-#define nfexp _p[33]
-#define nfexp_columnindex 33
-#define nsexp _p[34]
-#define nsexp_columnindex 34
-#define _g _p[35]
-#define _g_columnindex 35
+#define v _p[31]
+#define v_columnindex 31
+#define _g _p[32]
+#define _g_columnindex 32
 #define _ion_enat	*_ppvar[0]._pval
 #define _ion_inat	*_ppvar[1]._pval
 #define _ion_dinatdv	*_ppvar[2]._pval
@@ -142,12 +134,13 @@ extern double hoc_Exp(double);
 extern "C" {
 #endif
  static int hoc_nrnpointerindex =  -1;
+ static Datum* _extcall_thread;
+ static Prop* _extcall_prop;
  /* external NEURON variables */
  extern double celsius;
  /* declaration of user functions */
- static void _hoc_rates(void);
- static void _hoc_states(void);
- static void _hoc_trates(void);
+ static void _hoc_calcRates(void);
+ static void _hoc_state(void);
  static void _hoc_vtrap(void);
  static int _mechtype;
 extern void _nrn_cacheloop_reg(int, int);
@@ -167,7 +160,7 @@ extern void hoc_reg_nmodl_filename(int, const char*);
 
  extern void _nrn_setdata_reg(int, void(*)(Prop*));
  static void _setdata(Prop* _prop) {
- _p = _prop->param; _ppvar = _prop->dparam;
+ _extcall_prop = _prop;
  }
  static void _hoc_setdata() {
  Prop *_prop, *hoc_getdata_range(int);
@@ -178,20 +171,17 @@ extern void hoc_reg_nmodl_filename(int, const char*);
  /* connect user functions to hoc names */
  static VoidFunc hoc_intfunc[] = {
  "setdata_ichan2", _hoc_setdata,
- "rates_ichan2", _hoc_rates,
- "states_ichan2", _hoc_states,
- "trates_ichan2", _hoc_trates,
+ "calcRates_ichan2", _hoc_calcRates,
+ "state_ichan2", _hoc_state,
  "vtrap_ichan2", _hoc_vtrap,
  0, 0
 };
 #define vtrap vtrap_ichan2
- extern double vtrap( double , double );
+ extern double vtrap( _threadargsprotocomma_ double , double );
+ #define _zq10 _thread[0]._pval[0]
  /* declare global and static user variables */
-#define usetable usetable_ichan2
- double usetable = 1;
  /* some parameters have upper and lower limits */
  static HocParmLimits _hoc_parm_limits[] = {
- "usetable_ichan2", 0, 1,
  0,0,0
 };
  static HocParmUnits _hoc_parm_units[] = {
@@ -218,10 +208,8 @@ extern void hoc_reg_nmodl_filename(int, const char*);
  static double m0 = 0;
  static double ns0 = 0;
  static double nf0 = 0;
- static double v = 0;
  /* connect global user variables to hoc */
  static DoubScal hoc_scdoub[] = {
- "usetable_ichan2", &usetable_ichan2,
  0,0
 };
  static DoubVec hoc_vdoub[] = {
@@ -252,14 +240,14 @@ static int _ode_count(int);
  "ikf_ichan2",
  "iks_ichan2",
  "il_ichan2",
- "minf_ichan2",
- "hinf_ichan2",
- "nfinf_ichan2",
- "nsinf_ichan2",
  "mtau_ichan2",
  "htau_ichan2",
  "nftau_ichan2",
  "nstau_ichan2",
+ "minf_ichan2",
+ "hinf_ichan2",
+ "nfinf_ichan2",
+ "nsinf_ichan2",
  0,
  "m_ichan2",
  "h_ichan2",
@@ -276,7 +264,7 @@ extern Prop* need_memb(Symbol*);
 static void nrn_alloc(Prop* _prop) {
 	Prop *prop_ion;
 	double *_p; Datum *_ppvar;
- 	_p = nrn_prop_data_alloc(_mechtype, 36, _prop);
+ 	_p = nrn_prop_data_alloc(_mechtype, 33, _prop);
  	/*initialize range parameters*/
  	gnatbar = 0;
  	gkfbar = 0;
@@ -284,7 +272,7 @@ static void nrn_alloc(Prop* _prop) {
  	gl = 0;
  	el = 0;
  	_prop->param = _p;
- 	_prop->param_size = 36;
+ 	_prop->param_size = 33;
  	_ppvar = nrn_prop_datum_alloc(_mechtype, 9, _prop);
  	_prop->dparam = _ppvar;
  	/*connect ionic variables to this model*/
@@ -306,6 +294,8 @@ static void nrn_alloc(Prop* _prop) {
  
 }
  static void _initlists();
+ static void _thread_mem_init(Datum*);
+ static void _thread_cleanup(Datum*);
  static void _update_ion_pointer(Datum*);
  extern Symbol* hoc_lookup(const char*);
 extern void _nrn_thread_reg(int, int, void(*)(Datum*));
@@ -314,7 +304,7 @@ extern void hoc_register_tolerance(int, HocStateTolerance*, Symbol***);
 extern void _cvode_abstol( Symbol**, double*, int);
 
  void _ichan2_reg() {
-	int _vectorized = 0;
+	int _vectorized = 1;
   _initlists();
  	ion_reg("nat", 1.0);
  	ion_reg("kf", 1.0);
@@ -322,15 +312,19 @@ extern void _cvode_abstol( Symbol**, double*, int);
  	_nat_sym = hoc_lookup("nat_ion");
  	_kf_sym = hoc_lookup("kf_ion");
  	_ks_sym = hoc_lookup("ks_ion");
- 	register_mech(_mechanism, nrn_alloc,nrn_cur, nrn_jacob, nrn_state, nrn_init, hoc_nrnpointerindex, 0);
+ 	register_mech(_mechanism, nrn_alloc,nrn_cur, nrn_jacob, nrn_state, nrn_init, hoc_nrnpointerindex, 2);
+  _extcall_thread = (Datum*)ecalloc(1, sizeof(Datum));
+  _thread_mem_init(_extcall_thread);
  _mechtype = nrn_get_mechtype(_mechanism[1]);
      _nrn_setdata_reg(_mechtype, _setdata);
+     _nrn_thread_reg(_mechtype, 1, _thread_mem_init);
+     _nrn_thread_reg(_mechtype, 0, _thread_cleanup);
      _nrn_thread_reg(_mechtype, 2, _update_ion_pointer);
  #if NMODL_TEXT
   hoc_reg_nmodl_text(_mechtype, nmodl_file_text);
   hoc_reg_nmodl_filename(_mechtype, nmodl_filename);
 #endif
-  hoc_register_prop_size(_mechtype, 36, 9);
+  hoc_register_prop_size(_mechtype, 33, 9);
   hoc_register_dparam_semantics(_mechtype, 0, "nat_ion");
   hoc_register_dparam_semantics(_mechtype, 1, "nat_ion");
   hoc_register_dparam_semantics(_mechtype, 2, "nat_ion");
@@ -348,19 +342,7 @@ extern void _cvode_abstol( Symbol**, double*, int);
  }
  static double FARADAY = 96520.0;
  static double R = 8.3134;
- static double _zq10 ;
- static double *_t_minf;
- static double *_t_mexp;
- static double *_t_hinf;
- static double *_t_hexp;
- static double *_t_nfinf;
- static double *_t_nfexp;
- static double *_t_nsinf;
- static double *_t_nsexp;
- static double *_t_mtau;
- static double *_t_htau;
- static double *_t_nftau;
- static double *_t_nstau;
+ /*Top LOCAL _zq10 */
 static int _reset;
 static char *modelname = "ichan2.mod";
 
@@ -368,31 +350,29 @@ static int error;
 static int _ninits = 0;
 static int _match_recurse=1;
 static void _modl_cleanup(){ _match_recurse=1;}
-static int _f_trates(double);
-static int rates(double);
-static int states();
-static int trates(double);
- static void _n_trates(double);
+static int calcRates(_threadargsprotocomma_ double);
+static int state(_threadargsproto_);
  
-static int  states (  ) {
-   trates ( _threadargscomma_ v ) ;
-   m = m + mexp * ( minf - m ) ;
-   h = h + hexp * ( hinf - h ) ;
-   nf = nf + nfexp * ( nfinf - nf ) ;
-   ns = ns + nsexp * ( nsinf - ns ) ;
-   
-/*VERBATIM*/
-  return 0;
-  return 0; }
+static int  state ( _threadargsproto_ ) {
+   calcRates ( _threadargscomma_ v ) ;
+   m = m + ( minf - m ) * ( 1.0 - exp ( - dt * _zq10 / mtau ) ) ;
+   h = h + ( hinf - h ) * ( 1.0 - exp ( - dt * _zq10 / htau ) ) ;
+   nf = nf + ( nfinf - nf ) * ( 1.0 - exp ( - dt * _zq10 / nftau ) ) ;
+   ns = ns + ( nsinf - ns ) * ( 1.0 - exp ( - dt * _zq10 / nstau ) ) ;
+    return 0; }
  
-static void _hoc_states(void) {
+static void _hoc_state(void) {
   double _r;
-   _r = 1.;
- states (  );
+   double* _p; Datum* _ppvar; Datum* _thread; NrnThread* _nt;
+   if (_extcall_prop) {_p = _extcall_prop->param; _ppvar = _extcall_prop->dparam;}else{ _p = (double*)0; _ppvar = (Datum*)0; }
+  _thread = _extcall_thread;
+  _nt = nrn_threads;
+ _r = 1.;
+ state ( _p, _ppvar, _thread, _nt );
  hoc_retpushx(_r);
 }
  
-static int  rates (  double _lv ) {
+static int  calcRates ( _threadargsprotocomma_ double _lv ) {
    double _lalpha , _lbeta , _lsum ;
  _zq10 = pow( 3.0 , ( ( celsius - 6.3 ) / 10.0 ) ) ;
    _lalpha = - 0.3 * vtrap ( _threadargscomma_ ( _lv + 60.0 - 17.0 ) , - 5.0 ) ;
@@ -417,135 +397,18 @@ static int  rates (  double _lv ) {
    nfinf = _lalpha / _lsum ;
     return 0; }
  
-static void _hoc_rates(void) {
+static void _hoc_calcRates(void) {
   double _r;
-   _r = 1.;
- rates (  *getarg(1) );
- hoc_retpushx(_r);
-}
- static double _mfac_trates, _tmin_trates;
- static void _check_trates();
- static void _check_trates() {
-  static int _maktable=1; int _i, _j, _ix = 0;
-  double _xi, _tmax;
-  static double _sav_dt;
-  static double _sav_celsius;
-  if (!usetable) {return;}
-  if (_sav_dt != dt) { _maktable = 1;}
-  if (_sav_celsius != celsius) { _maktable = 1;}
-  if (_maktable) { double _x, _dx; _maktable=0;
-   _tmin_trates =  - 100.0 ;
-   _tmax =  100.0 ;
-   _dx = (_tmax - _tmin_trates)/200.; _mfac_trates = 1./_dx;
-   for (_i=0, _x=_tmin_trates; _i < 201; _x += _dx, _i++) {
-    _f_trates(_x);
-    _t_minf[_i] = minf;
-    _t_mexp[_i] = mexp;
-    _t_hinf[_i] = hinf;
-    _t_hexp[_i] = hexp;
-    _t_nfinf[_i] = nfinf;
-    _t_nfexp[_i] = nfexp;
-    _t_nsinf[_i] = nsinf;
-    _t_nsexp[_i] = nsexp;
-    _t_mtau[_i] = mtau;
-    _t_htau[_i] = htau;
-    _t_nftau[_i] = nftau;
-    _t_nstau[_i] = nstau;
-   }
-   _sav_dt = dt;
-   _sav_celsius = celsius;
-  }
- }
-
- static int trates(double _lv){ _check_trates();
- _n_trates(_lv);
- return 0;
- }
-
- static void _n_trates(double _lv){ int _i, _j;
- double _xi, _theta;
- if (!usetable) {
- _f_trates(_lv); return; 
-}
- _xi = _mfac_trates * (_lv - _tmin_trates);
- if (isnan(_xi)) {
-  minf = _xi;
-  mexp = _xi;
-  hinf = _xi;
-  hexp = _xi;
-  nfinf = _xi;
-  nfexp = _xi;
-  nsinf = _xi;
-  nsexp = _xi;
-  mtau = _xi;
-  htau = _xi;
-  nftau = _xi;
-  nstau = _xi;
-  return;
- }
- if (_xi <= 0.) {
- minf = _t_minf[0];
- mexp = _t_mexp[0];
- hinf = _t_hinf[0];
- hexp = _t_hexp[0];
- nfinf = _t_nfinf[0];
- nfexp = _t_nfexp[0];
- nsinf = _t_nsinf[0];
- nsexp = _t_nsexp[0];
- mtau = _t_mtau[0];
- htau = _t_htau[0];
- nftau = _t_nftau[0];
- nstau = _t_nstau[0];
- return; }
- if (_xi >= 200.) {
- minf = _t_minf[200];
- mexp = _t_mexp[200];
- hinf = _t_hinf[200];
- hexp = _t_hexp[200];
- nfinf = _t_nfinf[200];
- nfexp = _t_nfexp[200];
- nsinf = _t_nsinf[200];
- nsexp = _t_nsexp[200];
- mtau = _t_mtau[200];
- htau = _t_htau[200];
- nftau = _t_nftau[200];
- nstau = _t_nstau[200];
- return; }
- _i = (int) _xi;
- _theta = _xi - (double)_i;
- minf = _t_minf[_i] + _theta*(_t_minf[_i+1] - _t_minf[_i]);
- mexp = _t_mexp[_i] + _theta*(_t_mexp[_i+1] - _t_mexp[_i]);
- hinf = _t_hinf[_i] + _theta*(_t_hinf[_i+1] - _t_hinf[_i]);
- hexp = _t_hexp[_i] + _theta*(_t_hexp[_i+1] - _t_hexp[_i]);
- nfinf = _t_nfinf[_i] + _theta*(_t_nfinf[_i+1] - _t_nfinf[_i]);
- nfexp = _t_nfexp[_i] + _theta*(_t_nfexp[_i+1] - _t_nfexp[_i]);
- nsinf = _t_nsinf[_i] + _theta*(_t_nsinf[_i+1] - _t_nsinf[_i]);
- nsexp = _t_nsexp[_i] + _theta*(_t_nsexp[_i+1] - _t_nsexp[_i]);
- mtau = _t_mtau[_i] + _theta*(_t_mtau[_i+1] - _t_mtau[_i]);
- htau = _t_htau[_i] + _theta*(_t_htau[_i+1] - _t_htau[_i]);
- nftau = _t_nftau[_i] + _theta*(_t_nftau[_i+1] - _t_nftau[_i]);
- nstau = _t_nstau[_i] + _theta*(_t_nstau[_i+1] - _t_nstau[_i]);
- }
-
- 
-static int  _f_trates (  double _lv ) {
-   double _ltinc ;
- rates ( _threadargscomma_ _lv ) ;
-   _ltinc = - dt * _zq10 ;
-   mexp = 1.0 - exp ( _ltinc / mtau ) ;
-   hexp = 1.0 - exp ( _ltinc / htau ) ;
-   nfexp = 1.0 - exp ( _ltinc / nftau ) ;
-   nsexp = 1.0 - exp ( _ltinc / nstau ) ;
-    return 0; }
- 
-static void _hoc_trates(void) {
-  double _r;
-    _r = 1.;
- trates (  *getarg(1) );
+   double* _p; Datum* _ppvar; Datum* _thread; NrnThread* _nt;
+   if (_extcall_prop) {_p = _extcall_prop->param; _ppvar = _extcall_prop->dparam;}else{ _p = (double*)0; _ppvar = (Datum*)0; }
+  _thread = _extcall_thread;
+  _nt = nrn_threads;
+ _r = 1.;
+ calcRates ( _p, _ppvar, _thread, _nt, *getarg(1) );
  hoc_retpushx(_r);
 }
  
-double vtrap (  double _lx , double _ly ) {
+double vtrap ( _threadargsprotocomma_ double _lx , double _ly ) {
    double _lvtrap;
  if ( fabs ( _lx / _ly ) < 1e-6 ) {
      _lvtrap = _ly * ( 1.0 - _lx / _ly / 2.0 ) ;
@@ -559,11 +422,23 @@ return _lvtrap;
  
 static void _hoc_vtrap(void) {
   double _r;
-   _r =  vtrap (  *getarg(1) , *getarg(2) );
+   double* _p; Datum* _ppvar; Datum* _thread; NrnThread* _nt;
+   if (_extcall_prop) {_p = _extcall_prop->param; _ppvar = _extcall_prop->dparam;}else{ _p = (double*)0; _ppvar = (Datum*)0; }
+  _thread = _extcall_thread;
+  _nt = nrn_threads;
+ _r =  vtrap ( _p, _ppvar, _thread, _nt, *getarg(1) , *getarg(2) );
  hoc_retpushx(_r);
 }
  
 static int _ode_count(int _type){ hoc_execerror("ichan2", "cannot be used with CVODE"); return 0;}
+ 
+static void _thread_mem_init(Datum* _thread) {
+   _thread[0]._pval = (double*)ecalloc(1, sizeof(double));
+ }
+ 
+static void _thread_cleanup(Datum* _thread) {
+   free((void*)(_thread[0]._pval));
+ }
  extern void nrn_update_ion_pointer(Symbol*, Datum*, int, int);
  static void _update_ion_pointer(Datum* _ppvar) {
    nrn_update_ion_pointer(_nat_sym, _ppvar, 0, 0);
@@ -577,33 +452,31 @@ static int _ode_count(int _type){ hoc_execerror("ichan2", "cannot be used with C
    nrn_update_ion_pointer(_ks_sym, _ppvar, 8, 4);
  }
 
-static void initmodel() {
-  int _i; double _save;_ninits++;
- _save = t;
- t = 0.0;
-{
+static void initmodel(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt) {
+  int _i; double _save;{
   h = h0;
   m = m0;
   ns = ns0;
   nf = nf0;
  {
-   trates ( _threadargscomma_ v ) ;
+   calcRates ( _threadargscomma_ v ) ;
    m = minf ;
    h = hinf ;
    nf = nfinf ;
    ns = nsinf ;
    }
-  _sav_indep = t; t = _save;
-
+ 
 }
 }
 
 static void nrn_init(NrnThread* _nt, _Memb_list* _ml, int _type){
+double* _p; Datum* _ppvar; Datum* _thread;
 Node *_nd; double _v; int* _ni; int _iml, _cntml;
 #if CACHEVEC
     _ni = _ml->_nodeindices;
 #endif
 _cntml = _ml->_nodecount;
+_thread = _ml->_thread;
 for (_iml = 0; _iml < _cntml; ++_iml) {
  _p = _ml->_data[_iml]; _ppvar = _ml->_pdata[_iml];
 #if CACHEVEC
@@ -619,10 +492,11 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
   enat = _ion_enat;
   ekf = _ion_ekf;
   eks = _ion_eks;
- initmodel();
-   }}
+ initmodel(_p, _ppvar, _thread, _nt);
+   }
+}
 
-static double _nrn_current(double _v){double _current=0.;v=_v;{ {
+static double _nrn_current(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt, double _v){double _current=0.;v=_v;{ {
    gnat = gnatbar * m * m * m * h ;
    inat = gnat * ( v - enat ) ;
    gkf = gkfbar * nf * nf * nf * nf ;
@@ -639,12 +513,14 @@ static double _nrn_current(double _v){double _current=0.;v=_v;{ {
 } return _current;
 }
 
-static void nrn_cur(NrnThread* _nt, _Memb_list* _ml, int _type){
+static void nrn_cur(NrnThread* _nt, _Memb_list* _ml, int _type) {
+double* _p; Datum* _ppvar; Datum* _thread;
 Node *_nd; int* _ni; double _rhs, _v; int _iml, _cntml;
 #if CACHEVEC
     _ni = _ml->_nodeindices;
 #endif
 _cntml = _ml->_nodecount;
+_thread = _ml->_thread;
 for (_iml = 0; _iml < _cntml; ++_iml) {
  _p = _ml->_data[_iml]; _ppvar = _ml->_pdata[_iml];
 #if CACHEVEC
@@ -659,14 +535,14 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
   enat = _ion_enat;
   ekf = _ion_ekf;
   eks = _ion_eks;
- _g = _nrn_current(_v + .001);
+ _g = _nrn_current(_p, _ppvar, _thread, _nt, _v + .001);
  	{ double _diks;
  double _dikf;
  double _dinat;
   _dinat = inat;
   _dikf = ikf;
   _diks = iks;
- _rhs = _nrn_current(_v);
+ _rhs = _nrn_current(_p, _ppvar, _thread, _nt, _v);
   _ion_dinatdv += (_dinat - inat)/.001 ;
   _ion_dikfdv += (_dikf - ikf)/.001 ;
   _ion_diksdv += (_diks - iks)/.001 ;
@@ -684,14 +560,18 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
 	NODERHS(_nd) -= _rhs;
   }
  
-}}
+}
+ 
+}
 
-static void nrn_jacob(NrnThread* _nt, _Memb_list* _ml, int _type){
+static void nrn_jacob(NrnThread* _nt, _Memb_list* _ml, int _type) {
+double* _p; Datum* _ppvar; Datum* _thread;
 Node *_nd; int* _ni; int _iml, _cntml;
 #if CACHEVEC
     _ni = _ml->_nodeindices;
 #endif
 _cntml = _ml->_nodecount;
+_thread = _ml->_thread;
 for (_iml = 0; _iml < _cntml; ++_iml) {
  _p = _ml->_data[_iml];
 #if CACHEVEC
@@ -704,14 +584,18 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
 	NODED(_nd) += _g;
   }
  
-}}
+}
+ 
+}
 
-static void nrn_state(NrnThread* _nt, _Memb_list* _ml, int _type){
+static void nrn_state(NrnThread* _nt, _Memb_list* _ml, int _type) {
+double* _p; Datum* _ppvar; Datum* _thread;
 Node *_nd; double _v = 0.0; int* _ni; int _iml, _cntml;
 #if CACHEVEC
     _ni = _ml->_nodeindices;
 #endif
 _cntml = _ml->_nodecount;
+_thread = _ml->_thread;
 for (_iml = 0; _iml < _cntml; ++_iml) {
  _p = _ml->_data[_iml]; _ppvar = _ml->_pdata[_iml];
  _nd = _ml->_nodelist[_iml];
@@ -729,31 +613,23 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
   enat = _ion_enat;
   ekf = _ion_ekf;
   eks = _ion_eks;
- { error =  states();
- if(error){fprintf(stderr,"at line 70 in file ichan2.mod:\n	SOLVE states\n"); nrn_complain(_p); abort_run(error);}
- }   }}
+ {  { state(_p, _ppvar, _thread, _nt); }
+  }   }}
 
 }
 
 static void terminal(){}
 
-static void _initlists() {
+static void _initlists(){
+ double _x; double* _p = &_x;
  int _i; static int _first = 1;
   if (!_first) return;
-   _t_minf = makevector(201*sizeof(double));
-   _t_mexp = makevector(201*sizeof(double));
-   _t_hinf = makevector(201*sizeof(double));
-   _t_hexp = makevector(201*sizeof(double));
-   _t_nfinf = makevector(201*sizeof(double));
-   _t_nfexp = makevector(201*sizeof(double));
-   _t_nsinf = makevector(201*sizeof(double));
-   _t_nsexp = makevector(201*sizeof(double));
-   _t_mtau = makevector(201*sizeof(double));
-   _t_htau = makevector(201*sizeof(double));
-   _t_nftau = makevector(201*sizeof(double));
-   _t_nstau = makevector(201*sizeof(double));
 _first = 0;
 }
+
+#if defined(__cplusplus)
+} /* extern "C" */
+#endif
 
 #if NMODL_TEXT
 static const char* nmodl_filename = "/Users/temma/ghq/LabRotations/NCBC/src/mechanisms/ichan2.mod";
@@ -761,32 +637,28 @@ static const char* nmodl_file_text =
   "TITLE ichan2.mod\n"
   "\n"
   "COMMENT\n"
-  "konduktivitas valtozas hatasa- somaban \n"
+  "the effect of conductivity change in soma.\n"
   "ENDCOMMENT\n"
   "\n"
   "UNITS {\n"
   "  (mA) =(milliamp)\n"
   "  (mV) =(millivolt)\n"
   "  (uF) = (microfarad)\n"
-  "	(molar) = (1/liter)\n"
-  "	(nA) = (nanoamp)\n"
-  "	(mM) = (millimolar)\n"
-  "	(um) = (micron)\n"
-  "	FARADAY = 96520 (coul)\n"
-  "	R = 8.3134	(joule/degC)\n"
+  "  (molar) = (1/liter)\n"
+  "  (nA) = (nanoamp)\n"
+  "  (mM) = (millimolar)\n"
+  "  (um) = (micron)\n"
+  "  FARADAY = 96520 (coul)\n"
+  "  R = 8.3134  (joule/degC)\n"
   "}\n"
   "\n"
-  "? interface \n"
   "NEURON { \n"
   "  SUFFIX ichan2\n"
   "  USEION nat READ enat WRITE inat VALENCE 1\n"
   "  USEION kf READ ekf WRITE ikf  VALENCE 1\n"
   "  USEION ks READ eks WRITE iks  VALENCE 1\n"
   "  NONSPECIFIC_CURRENT il\n"
-  "  RANGE  gnat, gkf, gks\n"
-  "  RANGE gnatbar, gkfbar, gksbar\n"
-  "  RANGE gl, el\n"
-  "  RANGE minf, mtau, hinf, htau, nfinf, nftau, inat, ikf, nsinf, nstau, iks\n"
+  "  RANGE gnat, gkf, gks, gnatbar, gkfbar, gksbar, gl, el, minf, mtau, hinf, htau, nfinf, nftau, inat, ikf, nsinf, nstau, iks\n"
   "}\n"
   "\n"
   "INDEPENDENT {t FROM 0 TO 100 WITH 100 (ms)}\n"
@@ -796,17 +668,17 @@ static const char* nmodl_file_text =
   "  celsius = 6.3 (degC)\n"
   "  dt (ms)\n"
   "  enat  (mV)\n"
-  "	gnatbar (mho/cm2)\n"
+  "  gnatbar (mho/cm2)\n"
   "  ekf  (mV)\n"
-  "	gkfbar (mho/cm2)\n"
+  "  gkfbar (mho/cm2)\n"
   "  eks  (mV)\n"
-  "	gksbar (mho/cm2)\n"
-  "	gl (mho/cm2)\n"
+  "  gksbar (mho/cm2)\n"
+  "  gl (mho/cm2)\n"
   "  el (mV)\n"
   "}\n"
   "\n"
   "STATE {\n"
-  "	m h nf ns\n"
+  "  m h nf ns\n"
   "}\n"
   "\n"
   "ASSIGNED {\n"
@@ -817,109 +689,98 @@ static const char* nmodl_file_text =
   "  inat (mA/cm2)\n"
   "  ikf (mA/cm2)\n"
   "  iks (mA/cm2)\n"
+  "  il (mA/cm2)\n"
   "\n"
-  "	il (mA/cm2)\n"
+  "  mtau (ms)\n"
+  "  htau (ms)\n"
+  "  nftau (ms)\n"
+  "  nstau (ms)\n"
   "\n"
-  "	minf hinf nfinf nsinf\n"
-  "  mtau (ms) htau (ms) nftau (ms) nstau (ms)\n"
-  "	mexp hexp nfexp nsexp\n"
+  "  minf\n"
+  "  hinf\n"
+  "  nfinf\n"
+  "  nsinf\n"
   "} \n"
   "\n"
-  "? currents\n"
   "BREAKPOINT {\n"
-  "	SOLVE states\n"
-  "    gnat = gnatbar*m*m*m*h  \n"
-  "    inat = gnat*(v - enat)\n"
-  "    gkf = gkfbar*nf*nf*nf*nf\n"
-  "    ikf = gkf*(v-ekf)\n"
-  "    gks = gksbar*ns*ns*ns*ns\n"
-  "    iks = gks*(v-eks)\n"
-  "\n"
-  "	il = gl*(v-el)\n"
+  "  SOLVE state\n"
+  "  gnat = gnatbar * m * m * m * h  \n"
+  "  inat = gnat * (v - enat)\n"
+  "  gkf = gkfbar * nf * nf * nf * nf\n"
+  "  ikf = gkf * (v-ekf)\n"
+  "  gks = gksbar * ns * ns * ns * ns\n"
+  "  iks = gks * (v-eks)\n"
+  "  il = gl * (v-el)\n"
   "}\n"
   "\n"
   "UNITSOFF\n"
   "\n"
   "INITIAL {\n"
-  "	trates(v)\n"
-  "	\n"
+  "  calcRates(v)\n"
+  "  \n"
   "  m = minf\n"
   "  h = hinf\n"
   "  nf = nfinf\n"
   "  ns = nsinf\n"
   "}\n"
   "\n"
-  "? states\n"
-  "PROCEDURE states() {	:Computes state variables m, h, and n at the current v and dt.\n"
-  "  trates(v)\n"
-  "  m = m + mexp*(minf-m)\n"
-  "  h = h + hexp*(hinf-h)\n"
-  "  nf = nf + nfexp*(nfinf-nf)\n"
-  "  ns = ns + nsexp*(nsinf-ns)\n"
-  "  VERBATIM\n"
-  "  return 0;\n"
-  "  ENDVERBATIM\n"
-  "}\n"
-  "\n"
   "LOCAL q10\n"
   "\n"
-  "? rates\n"
-  "PROCEDURE rates(v) {  :Computes rate and other constants at current v.\n"
-  "  :Call once from HOC to initialize inf at resting v.\n"
-  "  LOCAL  alpha, beta, sum\n"
+  "PROCEDURE state() {\n"
+  "  calcRates(v)\n"
+  "\n"
+  "  m = m + (minf-m) * (1 - exp(-dt*q10/mtau))\n"
+  "  h = h + (hinf-h) * (1 - exp(-dt*q10/htau))\n"
+  "  nf = nf + (nfinf-nf) * (1 - exp(-dt*q10/nftau))\n"
+  "  ns = ns + (nsinf-ns) * (1 - exp(-dt*q10/nstau))\n"
+  "}\n"
+  "\n"
+  ":Call once to initialize inf at resting v.\n"
+  "PROCEDURE calcRates(v) {\n"
+  "  LOCAL alpha, beta, sum\n"
   "  q10 = 3^((celsius - 6.3)/10)\n"
+  "\n"
   "  :\"m\" sodium activation system - act and inact cross at -40\n"
-  "	alpha = -0.3*vtrap((v+60-17),-5)\n"
-  "	beta = 0.3*vtrap((v+60-45),5)\n"
-  "	sum = alpha+beta        \n"
-  "	mtau = 1/sum\n"
+  "  :\"m\" is the activation gate for the sodium current. It is voltage-dependent.\n"
+  "  alpha = -0.3*vtrap((v+60-17),-5)\n"
+  "  beta = 0.3*vtrap((v+60-45),5)\n"
+  "  sum = alpha+beta        \n"
+  "  mtau = 1/sum\n"
   "  minf = alpha/sum\n"
+  "\n"
   "  :\"h\" sodium inactivation system\n"
-  "	alpha = 0.23/exp((v+60+5)/20)\n"
-  "	beta = 3.33/(1+exp((v+60-47.5)/-10))\n"
-  "	sum = alpha+beta\n"
-  "	htau = 1/sum \n"
+  "  :\"h\" is the inactivation gate for the sodium current. It is also voltage-dependent.\n"
+  "  alpha = 0.23/exp((v+60+5)/20)\n"
+  "  beta = 3.33/(1+exp((v+60-47.5)/-10))\n"
+  "  sum = alpha+beta\n"
+  "  htau = 1/sum \n"
   "  hinf = alpha/sum \n"
+  "\n"
   "  :\"ns\" sKDR activation system\n"
+  "  :\"ns\" is the activation gate for the slow Potassium (K) Rectifier current. It is voltage-dependent.\n"
   "  alpha = -0.028*vtrap((v+65-35),-6)\n"
-  "	beta = 0.1056/exp((v+65-10)/40)\n"
-  "	sum = alpha+beta        \n"
-  "	nstau = 1/sum\n"
+  "  beta = 0.1056/exp((v+65-10)/40)\n"
+  "  sum = alpha+beta        \n"
+  "  nstau = 1/sum\n"
   "  nsinf = alpha/sum\n"
+  "\n"
   "  :\"nf\" fKDR activation system\n"
+  "  :\"nf\" is the activation gate for the fast Potassium (K) Rectifier current. It is voltage-dependent.\n"
   "  alpha = -0.07*vtrap((v+65-47),-6)\n"
-  "	beta = 0.264/exp((v+65-22)/40)\n"
-  "	sum = alpha+beta        \n"
-  "	nftau = 1/sum\n"
+  "  beta = 0.264/exp((v+65-22)/40)\n"
+  "  sum = alpha+beta        \n"
+  "  nftau = 1/sum\n"
   "  nfinf = alpha/sum\n"
   "}\n"
   "\n"
-  "PROCEDURE trates(v) {  :Computes rate and other constants at current v.\n"
-  "  :Call once from HOC to initialize inf at resting v.\n"
-  "	LOCAL tinc\n"
-  "  TABLE minf, mexp, hinf, hexp, nfinf, nfexp, nsinf, nsexp, mtau, htau, nftau, nstau\n"
-  "	DEPEND dt, celsius FROM -100 TO 100 WITH 200\n"
-  "\n"
-  "	rates(v)	: not consistently executed from here if usetable_hh == 1\n"
-  "		: so don't expect the tau values to be tracking along with\n"
-  "		: the inf values in hoc\n"
-  "\n"
-  "  tinc = -dt * q10\n"
-  "  mexp = 1 - exp(tinc/mtau)\n"
-  "  hexp = 1 - exp(tinc/htau)\n"
-  "	nfexp = 1 - exp(tinc/nftau)\n"
-  "	nsexp = 1 - exp(tinc/nstau)\n"
-  "}\n"
-  "\n"
-  "FUNCTION vtrap(x,y) {  :Traps for 0 in denominator of rate eqns.\n"
+  "FUNCTION vtrap(x,y) {\n"
   "  if (fabs(x/y) < 1e-6) {\n"
   "    vtrap = y*(1 - x/y/2)\n"
-  "  }else{  \n"
+  "  } else {\n"
   "    vtrap = x/(exp(x/y) - 1)\n"
   "  }\n"
   "}\n"
   "\n"
   "UNITSON\n"
-  "\n"
   ;
 #endif
