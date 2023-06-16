@@ -10,7 +10,8 @@ from cells import BasketCell
 
 @click.command()
 @click.option("-o", "--output", default="outputs", type=click.Path(exists=True), help="Path to output directory.")
-def simulate_gap_junction(output: str) -> None:
+@click.option("--negative", is_flag=True, help="Use negative current.")
+def simulate_gap_junction(output: str, negative: bool) -> None:
     pv1 = BasketCell(0)
     pv2 = BasketCell(1)
 
@@ -25,18 +26,29 @@ def simulate_gap_junction(output: str) -> None:
     h.setpointer(pv2.soma(0.5)._ref_v, "v_pair", gap1)
     h.setpointer(pv1.soma(0.5)._ref_v, "v_pair", gap2)
 
+    if not negative:
+        normalize_stimulus_1 = h.IClamp(pv1.dendrites[0](1))
+        normalize_stimulus_1.delay = 100 * ms
+        normalize_stimulus_1.dur = 400 * ms
+        normalize_stimulus_1.amp = -0.15  # nA
+
+        normalize_stimulus_2 = h.IClamp(pv2.dendrites[0](1))
+        normalize_stimulus_2.delay = 100 * ms
+        normalize_stimulus_2.dur = 400 * ms
+        normalize_stimulus_2.amp = -0.15  # nA
+
     stimulus = h.IClamp(pv1.dendrites[0](1))
 
-    stimulus.delay = 100 * ms
+    stimulus.delay = (300 if not negative else 100) * ms
     stimulus.dur = 200 * ms
-    stimulus.amp = 0.02  # nA
+    stimulus.amp = 0.2 if not negative else -0.2  # nA
 
     pv1_v = h.Vector().record(pv1.soma(0.5)._ref_v)
     pv2_v = h.Vector().record(pv2.soma(0.5)._ref_v)
     t = h.Vector().record(h._ref_t)
 
-    h.finitialize(-65 * mV)
-    h.continuerun(400 * ms)
+    h.finitialize(-66.9 * mV)
+    h.continuerun((600 if not negative else 400) * ms)
 
     fig, ax = plt.subplots()
 
@@ -45,6 +57,6 @@ def simulate_gap_junction(output: str) -> None:
     ax.set(xlabel="t (ms)", ylabel="v (mV)")
     ax.legend()
 
-    ax.set_ylim(bottom=-60.5)
+    ax.set_ylim(bottom=-70)
 
     plt.savefig(os.path.join(output, "gap_junction.png"))

@@ -19,8 +19,8 @@ UNITS {
 NEURON { 
   SUFFIX ichan2
   USEION nat READ enat WRITE inat VALENCE 1
-  USEION kf READ ekf WRITE ikf  VALENCE 1
-  USEION ks READ eks WRITE iks  VALENCE 1
+  USEION kf READ ekf WRITE ikf VALENCE 1
+  USEION ks READ eks WRITE iks VALENCE 1
   NONSPECIFIC_CURRENT il
   RANGE gnat, gkf, gks, gnatbar, gkfbar, gksbar, gl, el, minf, mtau, hinf, htau, nfinf, nftau, inat, ikf, nsinf, nstau, iks
 }

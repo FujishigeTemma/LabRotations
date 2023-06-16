@@ -13,6 +13,14 @@ tasks:
       - rye run nrnivmodl
       - mv x86_64 ../x86_64
   run:
+    deps:
+      - run:positive
+      - run:negative
+  run:positive:
     dir: src
     cmds:
       - rye run python cli.py simulate-gap-junction -o ../outputs
+  run:negative:
+    dir: src
+    cmds:
+      - rye run python cli.py simulate-gap-junction -o ../outputs --negative

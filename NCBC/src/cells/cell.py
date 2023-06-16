@@ -1,17 +1,26 @@
 import csv
-from typing import List
+from collections.abc import Iterator
+from dataclasses import dataclass
 
 from neuron import h
 
 h.load_file("stdrun.hoc")
 
 class Cell:
+    name: str
+
     def __init__(self, id: int):
         self._id = id
         self.sections = []
         self.dendrites = []
         self._setup_morphology()
         self._setup_biophysics()
+    
+    def _setup_morphology(self) -> None:
+        raise NotImplementedError("_setup_morphology must be implemented")
+
+    def _setup_biophysics(self) -> None:
+        raise NotImplementedError("_setup_biophysics must be implemented")
 
     def add_soma(self, name: str, diameter: float, L: float):
         if hasattr(self, "soma"):
@@ -22,7 +31,7 @@ class Cell:
         self.soma.L = L
         self.sections.append(self.soma)
 
-    def add_dendrites(self, name: str, n_section: int, section_names: List[str], diameters: List[float], Ls: List[float], soma_location: float):
+    def add_dendrites(self, name: str, n_section: int, section_names: list[str], diameters: list[float], Ls: list[float], soma_location: float):
         if not hasattr(self, "soma"):
             raise AttributeError("soma does not exist")
         if len(section_names) != n_section or len(diameters) != n_section or len(Ls) != n_section:
@@ -53,22 +62,11 @@ class Cell:
         return sections
 
     def load_biophysics_from_file(self, path: str):
-        parameters: List[Parameter] = []
-        with open(path, "r") as f:
-            reader = csv.reader(f, delimiter="\t")
-            for row in reader:
-                if len(row) == 0 or row[0].startswith("#"):
-                    continue
-                if len(row) != 3:
-                    raise ValueError("Each row must have 3 columns")
-                
-                attribute_name = row[0]
-                section_name = row[1]
-                value = float(row[2])
+        parameters: list[Parameter] = []
+        for parameter in parameter_reader(path):
+            parameters.append(parameter)
 
-                parameters.append(Parameter(attribute_name, section_name, value))
-
-        mechanisms_for_each_section = {}
+        mechanisms_for_each_section: dict[str, list[str]] = {}
         for parameter in parameters:
             if mechanisms_for_each_section.get(parameter.section_name) is None:
                 mechanisms_for_each_section[parameter.section_name] = []
@@ -90,14 +88,23 @@ class Cell:
             for section in sections:
                 setattr(section, parameter.attribute_name, parameter.value)
 
+@dataclass(frozen=True)
 class Parameter:
-    def __init__(self, attribute_name: str, section_name: str, value: float):
-        self.attribute_name = attribute_name
-        self.section_name = section_name
-        self.value = value
+    attribute_name: str
+    section_name: str
+    value: float
 
-    def __repr__(self):
-        return f'Parameter({self.attribute_name}, {self.section_name}, {self.value})'
-
-    def __str__(self):
-        return f'attribute: {self.attribute_name}, section: {self.section_name}, value: {self.value}'
+def parameter_reader(path: str) -> Iterator[Parameter]:
+    with open(path, "r") as f:
+        reader = csv.reader(f, delimiter="\t")
+        for row in reader:
+            if len(row) == 0 or row[0].startswith("#"):
+                continue
+            if len(row) != 3:
+                raise ValueError("Each row must have 3 columns")
+            
+            attribute_name = row[0]
+            section_name = row[1]
+            value = float(row[2])
+    
+            yield Parameter(attribute_name, section_name, value)
