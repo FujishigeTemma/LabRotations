@@ -3,58 +3,58 @@ TITLE T-calcium channel From Migliore CA3
 
 
 UNITS {
-	(mA) = (milliamp)
-	(mV) = (millivolt)
+  (mA) = (milliamp)
+  (mV) = (millivolt)
 
-	FARADAY = 96520 (coul)
-	R = 8.3134 (joule/degC)
-	KTOMV = .0853 (mV/degC)
+  FARADAY = 96520 (coul)
+  R = 8.3134 (joule/degC)
+  KTOMV = .0853 (mV/degC)
 }
 
 PARAMETER {
-	v (mV)
-	celsius = 6.3	(degC)
-	gcatbar=.003 (mho/cm2)
-	cai (mM)
-	cao (mM)
+  v (mV)
+  celsius = 6.3  (degC)
+  gcatbar=.003 (mho/cm2)
+  cai (mM)
+  cao (mM)
 }
 
 
 NEURON {
-	SUFFIX cat
-	USEION tca READ etca WRITE itca VALENCE 2
-	USEION ca READ cai, cao VALENCE 2
+  SUFFIX cat
+  USEION tca READ etca WRITE itca VALENCE 2
+  USEION ca READ cai, cao VALENCE 2
         RANGE gcatbar,cai, itca, etca
 }
 
 STATE {
-	m h 
+  m h 
 }
 
 ASSIGNED {
-	itca (mA/cm2)
+  itca (mA/cm2)
         gcat (mho/cm2)
-	etca (mV)
+  etca (mV)
 }
 
 INITIAL {
       m = minf(v)
       h = hinf(v)
-	VERBATIM
-	cai=_ion_cai;
-	ENDVERBATIM
+  VERBATIM
+  cai=_ion_cai;
+  ENDVERBATIM
 }
 
 BREAKPOINT {
-	SOLVE states METHOD cnexp
-	gcat = gcatbar*m*m*h
-	itca = gcat*ghk(v,cai,cao)
+  SOLVE states METHOD cnexp
+  gcat = gcatbar*m*m*h
+  itca = gcat*ghk(v,cai,cao)
 
 }
 
-DERIVATIVE states {	: exact when v held constant
-	m' = (minf(v) - m)/m_tau(v)
-	h' = (hinf(v) - h)/h_tau(v)
+DERIVATIVE states {  : exact when v held constant
+  m' = (minf(v) - m)/m_tau(v)
+  h' = (hinf(v) - h)/h_tau(v)
 }
 
 
@@ -72,42 +72,42 @@ FUNCTION KTF(celsius (DegC)) (mV) {
 
 
 FUNCTION efun(z) {
-	if (fabs(z) < 1e-4) {
-		efun = 1 - z/2
-	}else{
-		efun = z/(exp(z) - 1)
-	}
+  if (fabs(z) < 1e-4) {
+    efun = 1 - z/2
+  }else{
+    efun = z/(exp(z) - 1)
+  }
 }
 
 FUNCTION hinf(v(mV)) {
-	LOCAL a,b
-	TABLE FROM -150 TO 150 WITH 200
-	a = 1.e-6*exp(-v/16.26)
-	b = 1/(exp((-v+29.79)/10)+1)
-	hinf = a/(a+b)
+  LOCAL a,b
+  TABLE FROM -150 TO 150 WITH 200
+  a = 1.e-6*exp(-v/16.26)
+  b = 1/(exp((-v+29.79)/10)+1)
+  hinf = a/(a+b)
 }
 
 FUNCTION minf(v(mV)) {
-	LOCAL a,b
-	TABLE FROM -150 TO 150 WITH 200
+  LOCAL a,b
+  TABLE FROM -150 TO 150 WITH 200
         
-	a = 0.2*(-1.0*v+19.26)/(exp((-1.0*v+19.26)/10.0)-1.0)
-	b = 0.009*exp(-v/22.03)
-	minf = a/(a+b)
+  a = 0.2*(-1.0*v+19.26)/(exp((-1.0*v+19.26)/10.0)-1.0)
+  b = 0.009*exp(-v/22.03)
+  minf = a/(a+b)
 }
 
 FUNCTION m_tau(v(mV)) (ms) {
-	LOCAL a,b
-	TABLE FROM -150 TO 150 WITH 200
-	a = 0.2*(-1.0*v+19.26)/(exp((-1.0*v+19.26)/10.0)-1.0)
-	b = 0.009*exp(-v/22.03)
-	m_tau = 1/(a+b)
+  LOCAL a,b
+  TABLE FROM -150 TO 150 WITH 200
+  a = 0.2*(-1.0*v+19.26)/(exp((-1.0*v+19.26)/10.0)-1.0)
+  b = 0.009*exp(-v/22.03)
+  m_tau = 1/(a+b)
 }
 
 FUNCTION h_tau(v(mV)) (ms) {
-	LOCAL a,b
+  LOCAL a,b
         TABLE FROM -150 TO 150 WITH 200
-	a = 1.e-6*exp(-v/16.26)
-	b = 1/(exp((-v+29.79)/10.)+1.)
-	h_tau = 1/(a+b)
+  a = 1.e-6*exp(-v/16.26)
+  b = 1/(exp((-v+29.79)/10.)+1.)
+  h_tau = 1/(a+b)
 }

@@ -75,103 +75,103 @@ ENDCOMMENT
 
 
 NEURON {
-	POINT_PROCESS tmgsyn
-	RANGE e, i
-	RANGE tau_1, tau_recovery, tau_facilition, U, u0
-	NONSPECIFIC_CURRENT i
+  POINT_PROCESS tmgsyn
+  RANGE e, i
+  RANGE tau_1, tau_recovery, tau_facilition, U, u0
+  NONSPECIFIC_CURRENT i
 }
 
 UNITS {
-	(nA) = (nanoamp)
-	(mV) = (millivolt)
-	(umho) = (micromho)
+  (nA) = (nanoamp)
+  (mV) = (millivolt)
+  (umho) = (micromho)
 }
 
 PARAMETER {
-	: e = -90 mV for inhibitory synapses,
-	:     0 mV for excitatory
-	e = -90	(mV)
-	: tau_1 was the same for inhibitory and excitatory synapses
-	: in the models used by T et al.
-	tau_1 = 3 (ms) < 1e-9, 1e9 >
-	: tau_recovery = 100 ms for inhibitory synapses,
-	:           800 ms for excitatory
-	tau_recovery = 100 (ms) < 1e-9, 1e9 >
-	: tau_facilition = 1000 ms for inhibitory synapses,
-	:             0 ms for excitatory
-	tau_facilition = 1000 (ms) < 0, 1e9 >
-	: U = 0.04 for inhibitory synapses, 
-	:     0.5 for excitatory
-	: the (1) is needed for the < 0, 1 > to be effective
-	:   in limiting the values of U and u0
-	U = 0.04 (1) < 0, 1 >
-	: initial value for the "facilitation variable"
-	u0 = 0 (1) < 0, 1 >
+  : e = -90 mV for inhibitory synapses,
+  :     0 mV for excitatory
+  e = -90  (mV)
+  : tau_1 was the same for inhibitory and excitatory synapses
+  : in the models used by T et al.
+  tau_1 = 3 (ms) < 1e-9, 1e9 >
+  : tau_recovery = 100 ms for inhibitory synapses,
+  :           800 ms for excitatory
+  tau_recovery = 100 (ms) < 1e-9, 1e9 >
+  : tau_facilition = 1000 ms for inhibitory synapses,
+  :             0 ms for excitatory
+  tau_facilition = 1000 (ms) < 0, 1e9 >
+  : U = 0.04 for inhibitory synapses, 
+  :     0.5 for excitatory
+  : the (1) is needed for the < 0, 1 > to be effective
+  :   in limiting the values of U and u0
+  U = 0.04 (1) < 0, 1 >
+  : initial value for the "facilitation variable"
+  u0 = 0 (1) < 0, 1 >
 }
 
 ASSIGNED {
-	v (mV)
-	i (nA)
-	x
+  v (mV)
+  i (nA)
+  x
 }
 
 STATE {
-	g (umho)
+  g (umho)
 }
 
 INITIAL {
-	g=0
+  g=0
 }
 
 BREAKPOINT {
-	SOLVE state METHOD cnexp
-	i = g*(v - e)
+  SOLVE state METHOD cnexp
+  i = g*(v - e)
 }
 
 DERIVATIVE state {
-	g' = -g/tau_1
+  g' = -g/tau_1
 }
 
 NET_RECEIVE(weight (umho), y, z, u, tsyn (ms)) {
 INITIAL {
 : these are in NET_RECEIVE to be per-stream
-	y = 0
-	z = 0
-:	u = 0
-	u = u0
-	tsyn = t
+  y = 0
+  z = 0
+: u = 0
+  u = u0
+  tsyn = t
 : this header will appear once per stream
 : printf("t\t t-tsyn\t y\t z\t u\t newu\t g\t dg\t newg\t newy\n")
 }
 
-	: first calculate z at event-
-	:   based on prior y and z
-	z = z*exp(-(t - tsyn)/tau_recovery)
-	z = z + ( y*(exp(-(t - tsyn)/tau_1) - exp(-(t - tsyn)/tau_recovery)) / ((tau_1/tau_recovery)-1) )
-	: now calc y at event-
-	y = y*exp(-(t - tsyn)/tau_1)
+  : first calculate z at event-
+  :   based on prior y and z
+  z = z*exp(-(t - tsyn)/tau_recovery)
+  z = z + ( y*(exp(-(t - tsyn)/tau_1) - exp(-(t - tsyn)/tau_recovery)) / ((tau_1/tau_recovery)-1) )
+  : now calc y at event-
+  y = y*exp(-(t - tsyn)/tau_1)
 
-	x = 1-y-z
+  x = 1-y-z
 
-	: calc u at event--
-	if (tau_facilition > 0) {
-		u = u*exp(-(t - tsyn)/tau_facilition)
-	} else {
-		u = U
-	}
+  : calc u at event--
+  if (tau_facilition > 0) {
+    u = u*exp(-(t - tsyn)/tau_facilition)
+  } else {
+    u = U
+  }
 
 : printf("%g\t%g\t%g\t%g\t%g", t, t-tsyn, y, z, u)
 
-	if (tau_facilition > 0) {
-		state_discontinuity(u, u + U*(1-u))
-	}
+  if (tau_facilition > 0) {
+    state_discontinuity(u, u + U*(1-u))
+  }
 
 : printf("\t%g\t%g\t%g", u, g, weight*x*u)
 
-	state_discontinuity(g, g + weight*x*u)
-	state_discontinuity(y, y + x*u)
+  state_discontinuity(g, g + weight*x*u)
+  state_discontinuity(y, y + x*u)
 
-	tsyn = t
+  tsyn = t
 
 : printf("\t%g\t%g\n", g, y)
 }

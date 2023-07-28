@@ -8,12 +8,12 @@ UNITS {
   (mA) =(milliamp)
   (mV) =(millivolt)
   (uF) = (microfarad)
-	(molar) = (1/liter)
-	(nA) = (nanoamp)
-	(mM) = (millimolar)
-	(um) = (micron)
-	FARADAY = 96520 (coul)
-	R = 8.3134	(joule/degC)
+  (molar) = (1/liter)
+  (nA) = (nanoamp)
+  (mM) = (millimolar)
+  (um) = (micron)
+  FARADAY = 96520 (coul)
+  R = 8.3134  (joule/degC)
 }
 
 NEURON { 
@@ -28,36 +28,36 @@ PARAMETER {
   v (mV) 
   celsius = 6.3 (degC)
   dt (ms) 
-	gncabar (mho/cm2)
+  gncabar (mho/cm2)
 }
 
 STATE {
-	c d
+  c d
 }
 
 ASSIGNED {
   gnca (mho/cm2)
-	inca (mA/cm2)
-	enca (mV)
-	cinf dinf
-	ctau (ms)
-	dtau (ms) 
-	cexp
-	dexp      
+  inca (mA/cm2)
+  enca (mV)
+  cinf dinf
+  ctau (ms)
+  dtau (ms) 
+  cexp
+  dexp      
 } 
 
 BREAKPOINT {
-	SOLVE states
+  SOLVE states
   gnca = gncabar * c * c * d
-	inca = gnca * (v - enca)
+  inca = gnca * (v - enca)
 }
 
 UNITSOFF
 
 INITIAL {
-	calcRates(v)
-	c = cinf
-	d = dinf
+  calcRates(v)
+  c = cinf
+  d = dinf
 }
 
 LOCAL q10

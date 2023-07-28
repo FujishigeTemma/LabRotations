@@ -29,6 +29,10 @@ tasks:
     dir: src
     cmds:
       - rye run python cli.py simulate-epsp-propagation -o ../outputs
+  run:pre-check:
+    dir: src
+    cmds:
+      - rye run python cli.py analyze-intrinsic-properties -o ../outputs
   run:net:
     dir: src
     cmds:

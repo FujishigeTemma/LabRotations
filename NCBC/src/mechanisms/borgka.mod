@@ -1,15 +1,15 @@
 TITLE Borg-Graham type generic K-A channel
 
 UNITS {
-	(mA) = (milliamp)
-	(mV) = (millivolt)
+  (mA) = (milliamp)
+  (mV) = (millivolt)
 }
 
 PARAMETER {
-	v (mV)
+  v (mV)
   ek (mV)
-	celsius (degC)
-	gkabar=.01 (mho/cm2)
+  celsius (degC)
+  gkabar=.01 (mho/cm2)
   vhalfn=-33.6 (mV)
   vhalfl=-83 (mV)
   a0l=0.08 (/ms)
@@ -21,14 +21,14 @@ PARAMETER {
 }
 
 NEURON {
-	SUFFIX borgka
-	USEION k READ ek WRITE ik
+  SUFFIX borgka
+  USEION k READ ek WRITE ik
   RANGE gkabar,gka, ik
   GLOBAL ninf, linf, taul, taun
 }
 
 STATE {
-	n
+  n
   l
 }
 
@@ -39,7 +39,7 @@ INITIAL {
 }
 
 ASSIGNED {
-	ik (mA/cm2)
+  ik (mA/cm2)
   gka
   taul
   taun
@@ -48,9 +48,9 @@ ASSIGNED {
 }
 
 BREAKPOINT {
-	SOLVE states METHOD cnexp
-	gka = gkabar*n*l
-	ik = gka*(v-ek)
+  SOLVE states METHOD cnexp
+  gka = gkabar*n*l
+  ik = gka*(v-ek)
 }
 
 FUNCTION rateN(v(mV)) {

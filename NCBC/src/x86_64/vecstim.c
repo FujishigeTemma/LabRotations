@@ -246,32 +246,32 @@ static int  processElement (  ) {
    
 /*VERBATIM*/
    
-	{ 
-		void* vecPointer; 
-		int index, size; 
-		double* eventTimesPointer;
-		
-		index = (int)currentIndex;
-		
-		if (index >= 0) {
-			vecPointer = *((void**)(&vectorSpace));
-			if (vecPointer) {
-				size = vector_capacity(vecPointer);
-				eventTimesPointer = vector_vec(vecPointer);
-				if (index < size) {
-					// Fetch event time at current index and increment index
-					eventTime = eventTimesPointer[index];
-					currentIndex += 1.;
-				} else {
-					// Invalid index, reset to -1
-					currentIndex = -1.;
-				}
-			} else {
-				// Invalid vector pointer, reset index to -1
-				currentIndex = -1.;
-			}
-		}
-	}
+  { 
+    void* vecPointer; 
+    int index, size; 
+    double* eventTimesPointer;
+    
+    index = (int)currentIndex;
+    
+    if (index >= 0) {
+      vecPointer = *((void**)(&vectorSpace));
+      if (vecPointer) {
+        size = vector_capacity(vecPointer);
+        eventTimesPointer = vector_vec(vecPointer);
+        if (index < size) {
+          // Fetch event time at current index and increment index
+          eventTime = eventTimesPointer[index];
+          currentIndex += 1.;
+        } else {
+          // Invalid index, reset to -1
+          currentIndex = -1.;
+        }
+      } else {
+        // Invalid vector pointer, reset index to -1
+        currentIndex = -1.;
+      }
+    }
+  }
   return 0; }
  
 static double _hoc_processElement(void* _vptr) {
@@ -285,14 +285,14 @@ static double _hoc_processElement(void* _vptr) {
 static int  play (  ) {
    
 /*VERBATIM*/
-	void** vecPointer;
-	
-	vecPointer = (void**)(&vectorSpace);
-	*vecPointer = (void*)0;
-	
-	if (ifarg(1)) {
-		*vecPointer = vector_arg(1);
-	}
+  void** vecPointer;
+  
+  vecPointer = (void**)(&vectorSpace);
+  *vecPointer = (void*)0;
+  
+  if (ifarg(1)) {
+    *vecPointer = vector_arg(1);
+  }
   return 0; }
  
 static double _hoc_play(void* _vptr) {
@@ -360,31 +360,31 @@ _first = 0;
 static const char* nmodl_filename = "/Users/temma/ghq/LabRotations/NCBC/src/mechanisms/vecstim.mod";
 static const char* nmodl_file_text = 
   "NEURON {\n"
-  "	ARTIFICIAL_CELL VecStim\n"
+  "  ARTIFICIAL_CELL VecStim\n"
   "}\n"
   "\n"
   "ASSIGNED {\n"
-  "	currentIndex\n"
-  "	eventTime (ms)\n"
-  "	vectorSpace\n"
+  "  currentIndex\n"
+  "  eventTime (ms)\n"
+  "  vectorSpace\n"
   "}\n"
   "\n"
   "INITIAL {\n"
-  "	currentIndex = 0\n"
-  "	processElement()\n"
-  "	if (currentIndex > 0) {\n"
-  "			net_send(eventTime - t, 1)\n"
-  "	}\n"
+  "  currentIndex = 0\n"
+  "  processElement()\n"
+  "  if (currentIndex > 0) {\n"
+  "      net_send(eventTime - t, 1)\n"
+  "  }\n"
   "}\n"
   "\n"
   "NET_RECEIVE (weight) {\n"
-  "	if (flag == 1) {\n"
-  "		net_event(t)\n"
-  "		processElement()\n"
-  "		if (currentIndex > 0) {\n"
-  "			net_send(eventTime - t, 1)\n"
-  "		}\n"
-  "	}\n"
+  "  if (flag == 1) {\n"
+  "    net_event(t)\n"
+  "    processElement()\n"
+  "    if (currentIndex > 0) {\n"
+  "      net_send(eventTime - t, 1)\n"
+  "    }\n"
+  "  }\n"
   "}\n"
   "\n"
   "VERBATIM\n"
@@ -395,45 +395,45 @@ static const char* nmodl_file_text =
   "\n"
   "PROCEDURE processElement() {\n"
   "VERBATIM    \n"
-  "	{ \n"
-  "		void* vecPointer; \n"
-  "		int index, size; \n"
-  "		double* eventTimesPointer;\n"
-  "		\n"
-  "		index = (int)currentIndex;\n"
-  "		\n"
-  "		if (index >= 0) {\n"
-  "			vecPointer = *((void**)(&vectorSpace));\n"
-  "			if (vecPointer) {\n"
-  "				size = vector_capacity(vecPointer);\n"
-  "				eventTimesPointer = vector_vec(vecPointer);\n"
-  "				if (index < size) {\n"
-  "					// Fetch event time at current index and increment index\n"
-  "					eventTime = eventTimesPointer[index];\n"
-  "					currentIndex += 1.;\n"
-  "				} else {\n"
-  "					// Invalid index, reset to -1\n"
-  "					currentIndex = -1.;\n"
-  "				}\n"
-  "			} else {\n"
-  "				// Invalid vector pointer, reset index to -1\n"
-  "				currentIndex = -1.;\n"
-  "			}\n"
-  "		}\n"
-  "	}\n"
+  "  { \n"
+  "    void* vecPointer; \n"
+  "    int index, size; \n"
+  "    double* eventTimesPointer;\n"
+  "    \n"
+  "    index = (int)currentIndex;\n"
+  "    \n"
+  "    if (index >= 0) {\n"
+  "      vecPointer = *((void**)(&vectorSpace));\n"
+  "      if (vecPointer) {\n"
+  "        size = vector_capacity(vecPointer);\n"
+  "        eventTimesPointer = vector_vec(vecPointer);\n"
+  "        if (index < size) {\n"
+  "          // Fetch event time at current index and increment index\n"
+  "          eventTime = eventTimesPointer[index];\n"
+  "          currentIndex += 1.;\n"
+  "        } else {\n"
+  "          // Invalid index, reset to -1\n"
+  "          currentIndex = -1.;\n"
+  "        }\n"
+  "      } else {\n"
+  "        // Invalid vector pointer, reset index to -1\n"
+  "        currentIndex = -1.;\n"
+  "      }\n"
+  "    }\n"
+  "  }\n"
   "ENDVERBATIM\n"
   "}\n"
   "\n"
   "PROCEDURE play() {\n"
   "VERBATIM\n"
-  "	void** vecPointer;\n"
-  "	\n"
-  "	vecPointer = (void**)(&vectorSpace);\n"
-  "	*vecPointer = (void*)0;\n"
-  "	\n"
-  "	if (ifarg(1)) {\n"
-  "		*vecPointer = vector_arg(1);\n"
-  "	}\n"
+  "  void** vecPointer;\n"
+  "  \n"
+  "  vecPointer = (void**)(&vectorSpace);\n"
+  "  *vecPointer = (void*)0;\n"
+  "  \n"
+  "  if (ifarg(1)) {\n"
+  "    *vecPointer = vector_arg(1);\n"
+  "  }\n"
   "ENDVERBATIM\n"
   "}\n"
   ;
