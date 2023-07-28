@@ -38,6 +38,14 @@
 	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
 	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
 
+./hyperde3.c: ../hyperde3.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "hyperde3.mod" -o "/Users/temma/ghq/LabRotations/NCBC/src/mechanisms/x86_64")
+
+./hyperde3.o: ./hyperde3.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+
 ./ichan2.c: ../ichan2.mod
 	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
 	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "ichan2.mod" -o "/Users/temma/ghq/LabRotations/NCBC/src/mechanisms/x86_64")
@@ -59,6 +67,30 @@
 	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "nca.mod" -o "/Users/temma/ghq/LabRotations/NCBC/src/mechanisms/x86_64")
 
 ./nca.o: ./nca.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+
+./tca.c: ../tca.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "tca.mod" -o "/Users/temma/ghq/LabRotations/NCBC/src/mechanisms/x86_64")
+
+./tca.o: ./tca.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+
+./tmgsyn.c: ../tmgsyn.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "tmgsyn.mod" -o "/Users/temma/ghq/LabRotations/NCBC/src/mechanisms/x86_64")
+
+./tmgsyn.o: ./tmgsyn.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+
+./vecstim.c: ../vecstim.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "vecstim.mod" -o "/Users/temma/ghq/LabRotations/NCBC/src/mechanisms/x86_64")
+
+./vecstim.o: ./vecstim.c
 	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
 	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
 

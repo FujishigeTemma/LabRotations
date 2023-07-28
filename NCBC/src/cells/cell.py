@@ -4,13 +4,56 @@ from dataclasses import dataclass
 
 from neuron import h
 
-h.load_file("stdrun.hoc")
 
 class Cell:
+    """
+    Base class for all cells.
+
+    Usage
+    -----
+    >>> from cells import Cell
+    >>> 
+    >>> class MyCell(Cell):
+    >>>     name = "mycell"
+    >>>
+    >>>     def _setup_morphology(self):
+    >>>         self.add_soma(name="soma", diameter=15, L=20)
+    >>>         self.add_dendrites(name="dend", n_section=3, section_names=["proximal", "middle", "distal"], diameters=[3, 2, 1], Ls=[50, 50, 50], soma_location=0)
+    >>>     def _setup_biophysics(self):
+    >>>         self.load_biophysics_from_file("path/to/biophysics.tsv")
+    >>>
+    >>> cell = MyCell(0)
+
+    Attributes
+    ----------
+    id : int
+        ID of the cell.
+    name : str
+        Name of the cell.
+    sections : list[h.Section]
+        List of all sections.
+    dendrites : list[h.Section]
+        List of dendrites.
+
+    Methods
+    -------
+    add_soma(name: str, diameter: float, L: float) -> None
+        Add a soma to the cell.
+    add_dendrites(name: str, n_section: int, section_names: list[str], diameters: list[float], Ls: list[float], soma_location: float) -> None
+        Add dendrites to the cell.
+    get_sections_by_name(name: str) -> list[h.Section]
+        Get sections by name.
+    load_biophysics_from_file(path: str) -> None
+        Load biophysics from a tsv file.
+        Syntax of the tsv file is as follows:
+        ```
+        attribute_name    section_name    value
+        ```
+    """
     name: str
 
-    def __init__(self, id: int):
-        self._id = id
+    def __init__(self, index: int):
+        self.id = f"{self.name}#{index}"
         self.sections = []
         self.dendrites = []
         self._setup_morphology()
@@ -48,9 +91,12 @@ class Cell:
             self.sections.append(dendrite)
             self.dendrites.append(dendrite)
             parent_section = dendrite
+    
+    def __str__(self):
+        return self.id
 
     def __repr__(self):
-        return "{}[{}]".format(self.name, self._id)
+        return self.id
 
     def get_sections_by_name(self, name: str):
         if name == "all":

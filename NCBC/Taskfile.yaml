@@ -16,6 +16,7 @@ tasks:
     deps:
       - run:positive
       - run:negative
+      - run:propagation
   run:positive:
     dir: src
     cmds:
@@ -24,3 +25,11 @@ tasks:
     dir: src
     cmds:
       - rye run python cli.py simulate-gap-junction -o ../outputs --negative
+  run:propagation:
+    dir: src
+    cmds:
+      - rye run python cli.py simulate-epsp-propagation -o ../outputs
+  run:net:
+    dir: src
+    cmds:
+      - rye run python cli.py simulate-dentate-gyrus -o ../outputs

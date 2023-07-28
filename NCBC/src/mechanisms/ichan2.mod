@@ -93,10 +93,10 @@ LOCAL q10
 PROCEDURE state() {
   calcRates(v)
 
-  m = m + (minf-m) * (1 - exp(-dt*q10/mtau))
-  h = h + (hinf-h) * (1 - exp(-dt*q10/htau))
-  nf = nf + (nfinf-nf) * (1 - exp(-dt*q10/nftau))
-  ns = ns + (nsinf-ns) * (1 - exp(-dt*q10/nstau))
+  m = m + (minf - m) * (1 - exp(-dt * q10 / mtau))
+  h = h + (hinf - h) * (1 - exp(-dt * q10 / htau))
+  nf = nf + (nfinf - nf) * (1 - exp(-dt * q10 / nftau))
+  ns = ns + (nsinf - ns) * (1 - exp(-dt * q10 / nstau))
 }
 
 :Call once to initialize inf at resting v.
