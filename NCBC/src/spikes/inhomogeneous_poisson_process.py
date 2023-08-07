@@ -8,7 +8,7 @@ def inhomogeneous_poisson_process(
         sampling_interval: float,
         rate_profile_frequency: int,
         rate_profile_amplitude: int,
-        refractory_period: float = 0.0001
+        refractory_period: float | None = None
     ) -> np.ndarray:
     """
     Generates a spike train from an inhomogeneous Poisson process.

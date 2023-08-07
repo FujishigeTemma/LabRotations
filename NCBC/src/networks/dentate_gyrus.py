@@ -94,7 +94,7 @@ class DentateGyrus(Network):
         # PP -> BC
         tmgsyn_params = TmgSynParams(tau_1=6.3, tau_facilition=0, tau_recovery=0, U=1, e=0)
         netcon_params = NetConParams(threshold=10, delay=1, weight=weight)
-        connections, vecstim = evoke(population=self.BCs, temporal_pattern=temporal_pattern, spatial_pattern=spatial_pattern, target_section_name="proxd", tmgsyn_params=tmgsyn_params,netcon_params=netcon_params)
+        connections, vecstim = evoke(population=self.BCs, temporal_pattern=temporal_pattern, spatial_pattern=spatial_pattern, target_section_name="ddend", tmgsyn_params=tmgsyn_params,netcon_params=netcon_params)
     
         self.PP_TO_BC_vecstims.append(vecstim)
         self.connections.append(connections)
