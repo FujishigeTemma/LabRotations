@@ -1,15 +1,11 @@
 import numpy as np
-from scipy import interpolate  # type: ignore
+from numpy.typing import NDArray
+from scipy.interpolate import interp1d
 
 
 def inhomogeneous_poisson_process(
-        t_start: float,
-        t_stop: float,
-        sampling_interval: float,
-        rate_profile_frequency: int,
-        rate_profile_amplitude: int,
-        refractory_period: float | None = None
-    ) -> np.ndarray:
+    t_start: float, t_stop: float, sampling_interval: float, rate_profile_frequency: int, rate_profile_amplitude: int, refractory_period: float | None = None
+) -> NDArray[np.float64]:
     """
     Generates a spike train from an inhomogeneous Poisson process.
     NOTE: units are seconds.
@@ -25,15 +21,15 @@ def inhomogeneous_poisson_process(
 
     random_numbers = np.random.uniform(0, max_cumulative_rate, n_spikes)
 
-    inv_cumulative_rate_func = interpolate.interp1d(cumulative_rate, t)
+    inv_cumulative_rate_func = interp1d(cumulative_rate, t)
 
-    spike_times: np.ndarray = inv_cumulative_rate_func(random_numbers)
+    spike_times: NDArray[np.float64] = inv_cumulative_rate_func(random_numbers)
     spike_times.sort()
 
     if refractory_period is None:
         return spike_times
 
-    thinned_spike_times = np.empty(0)
+    thinned_spike_times = np.empty(0, dtype=np.float64)
     previous_spike_time = t_start - refractory_period
 
     for spike_time in spike_times:

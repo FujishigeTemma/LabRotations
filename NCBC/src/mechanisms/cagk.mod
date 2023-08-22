@@ -1,12 +1,8 @@
 TITLE cagk.mod Calcium activated K channel.
-: Modified from Moczydlowski and Latorre (1983) J. Gen. Physiol. 82
 
-UNITS {
-  (molar) = (1/liter)
-  (mV) =  (millivolt)
-  (mA) =  (milliamp)
-  (mM) =  (millimolar)
-}
+COMMENT
+Modified from Moczydlowski and Latorre (1983) J. Gen. Physiol. 82
+ENDCOMMENT
 
 NEURON {
   SUFFIX cagk
@@ -15,7 +11,13 @@ NEURON {
   USEION tca READ tcai VALENCE 2
   USEION k READ ek WRITE ik
   RANGE gkbar, gkca, ik
-  GLOBAL oinf, otau
+}
+
+UNITS {
+  (molar) = (1/liter)
+  (mV) = (millivolt)
+  (mA) = (milliamp)
+  (mM) = (millimolar)
 }
 
 UNITS {
@@ -26,16 +28,16 @@ UNITS {
 PARAMETER {
   celsius (degC)
   v (mV)
-  gkbar=.01  (mho/cm2)
-  cai = 5.e-5  (mM)
   ek (mV)
+  cai = 5.e-5 (mM)
+  gkbar = .01 (mho/cm2)
   d1 = .84
   d2 = 1.
-  k1 = .48e-3  (mM)
-  k2 = .13e-6  (mM)
+  k1 = .48e-3 (mM)
+  k2 = .13e-6 (mM)
   abar = .28 (/ms)
   bbar = .48 (/ms)
-  st=1 (1)
+  st = 1 (1)
   lcai (mV)
   ncai (mV)
   tcai (mV)
@@ -43,30 +45,32 @@ PARAMETER {
 
 ASSIGNED {
   ik (mA/cm2)
+  gkca (mho/cm2)
   oinf
   otau (ms)
-  gkca (mho/cm2)
-}
-
-INITIAL {
-  cai = ncai + lcai + tcai
-  rate(v, cai)
-  o = oinf
 }
 
 STATE {
   o
 }
 
+INITIAL {
+  cai = ncai + lcai + tcai
+  rates(v, cai)
+
+  o = oinf
+}
+
 BREAKPOINT {
   SOLVE state METHOD cnexp
-  gkca = gkbar*o^st
-  ik = gkca*(v - ek)
+  gkca = gkbar * o^st
+  ik = gkca * (v - ek)
 }
 
 DERIVATIVE state {
-  rate(v, cai)
-  o' = (oinf - o)/otau
+  rates(v, cai)
+
+  o' = (oinf - o) / otau
 }
 
 FUNCTION alpha(v (mV), c (mM)) (1/ms) {
@@ -74,16 +78,19 @@ FUNCTION alpha(v (mV), c (mM)) (1/ms) {
 }
 
 FUNCTION beta(v (mV), c (mM)) (1/ms) {
-  beta = bbar/(1 + c/expTerm(k2,d2,v))
+  beta = bbar/(1 + c / expTerm(k2,d2,v))
 }
 
 FUNCTION expTerm(k (mM), d, v (mV)) (mM) {
-  expTerm = k*exp(-2*d*FARADAY*v/R/(273.15 + celsius))
+  expTerm = k * exp(-2 * d * FARADAY * v / R / (273.15 + celsius))
 }
 
-PROCEDURE rate(v (mV), c (mM)) {
-  LOCAL a
-  a = alpha(v, c)
-  otau = 1/(a + beta(v, c))
-  oinf = a*otau
+PROCEDURE rates(v (mV), cai (mM)) {
+  LOCAL a, b
+
+  a = alpha(v, cai)
+  b = beta(v, cai)
+
+  otau = 1 / (a + b)
+  oinf = a * otau
 }

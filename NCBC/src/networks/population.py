@@ -18,16 +18,17 @@ class Population:
 
     def __str__(self):
         return self.id
-    
+
     def __repr__(self):
         return self.id
+
 
 def find_nearest_points(n: int, m: int, k: int):
     """
     arrange the `n`,`m` of cells in a circle and find the `k`-nearest point indices for each cell
     NOTE: first cells are positioned at 0 degrees and the angle increases anti-clockwise
     """
-    
+
     # Calculate the angles for each point on A and B
     angles_A = np.array([2 * np.pi * i / n for i in range(n)])
     angles_B = np.array([2 * np.pi * i / m for i in range(m)])
@@ -49,6 +50,7 @@ def find_nearest_points(n: int, m: int, k: int):
 
     return nearest_points
 
+
 @dataclass
 class TmgSynParams:
     tau_1: float
@@ -57,26 +59,31 @@ class TmgSynParams:
     U: float
     e: float
 
+
 @dataclass
 class NetConParams:
     threshold: float
     delay: float
     weight: float
 
+
 @dataclass
 class Connection:
     synapse: object
     netcon: object
 
-def connect(pre_population: Population, post_population: Population, n_candidates: int, n_synapses: int, target_section_name: str, tmgsyn_params: TmgSynParams, netcon_params: NetConParams) -> list[Connection]:
+
+def connect(
+    pre_population: Population, post_population: Population, n_candidates: int, n_synapses: int, target_section_name: str, tmgsyn_params: TmgSynParams, netcon_params: NetConParams
+) -> list[Connection]:
     if n_candidates > len(post_population.cells):
         raise ValueError("n_candidate must be smaller than or equal to the number of cells in post_population")
     if n_synapses > n_candidates:
         raise ValueError("n_synapse must be smaller than or equal to n_candidate")
-    
+
     each_nearest_points = find_nearest_points(len(pre_population.cells), len(post_population.cells), n_candidates)
 
-    connections = []
+    connections: list[Connection] = []
     for pre_cell_index, nearest_points in enumerate(each_nearest_points):
         chosen_cells = np.random.choice(nearest_points, n_synapses, replace=False)
         for post_cell_index in chosen_cells:
@@ -97,8 +104,46 @@ def connect(pre_population: Population, post_population: Population, n_candidate
             netcon.weight[0] = netcon_params.weight
 
             connections.append(Connection(synapse, netcon))
-    
+
     return connections
+
+
+@dataclass
+class GapJunction:
+    pre: object
+    post: object
+
+
+def connect_gap(pre_population: Population, post_population: Population, n_candidates: int, n_synapses: int) -> list[GapJunction]:
+    if n_candidates > len(post_population.cells):
+        raise ValueError("n_candidate must be smaller than or equal to the number of cells in post_population")
+    if n_synapses > n_candidates:
+        raise ValueError("n_synapse must be smaller than or equal to n_candidate")
+
+    each_nearest_points = find_nearest_points(len(pre_population.cells), len(post_population.cells), n_candidates)
+
+    connections: list[GapJunction] = []
+    for pre_cell_index, nearest_points in enumerate(each_nearest_points):
+        chosen_cells = np.random.choice(nearest_points, n_synapses, replace=False)
+        for post_cell_index in chosen_cells:
+            pre = pre_population.cells[pre_cell_index]
+            post = post_population.cells[post_cell_index]
+
+            pre_gap = h.gap(pre.dendrites[1](0.5))
+            post_gap = h.gap(post.dendrites[1](0.5))
+
+            pre_gap.r = 6e2
+            pre_gap.delay = 5
+            post_gap.r = 6e2
+            post_gap.delay = 5
+
+            h.setpointer(post.dendrites[1](0.5)._ref_v, "v_pair", pre_gap)
+            h.setpointer(pre.dendrites[1](0.5)._ref_v, "v_pair", post_gap)
+
+            connections.append(GapJunction(pre_gap, post_gap))
+
+    return connections
+
 
 def evoke(population: Population, temporal_pattern: list[float], spatial_pattern: list[int], target_section_name: str, tmgsyn_params: TmgSynParams, netcon_params: NetConParams):
     evoked_cells = np.array(population.cells)[spatial_pattern]
@@ -110,7 +155,7 @@ def evoke(population: Population, temporal_pattern: list[float], spatial_pattern
     connections = []
     for cell in evoked_cells:
         target_sections = cell.get_sections_by_name(target_section_name)
-        
+
         for section in target_sections:
             synapse = h.tmgsyn(section(0.5))
             synapse.tau_1 = tmgsyn_params.tau_1
@@ -125,5 +170,5 @@ def evoke(population: Population, temporal_pattern: list[float], spatial_pattern
             netcon.weight[0] = netcon_params.weight
 
             connections.append(Connection(synapse, netcon))
-    
+
     return connections, (vecstim, pattern)

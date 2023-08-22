@@ -4,18 +4,6 @@ COMMENT
 the effect of conductivity change in soma.
 ENDCOMMENT
 
-UNITS {
-  (mA) =(milliamp)
-  (mV) =(millivolt)
-  (uF) = (microfarad)
-  (molar) = (1/liter)
-  (nA) = (nanoamp)
-  (mM) = (millimolar)
-  (um) = (micron)
-  FARADAY = 96520 (coul)
-  R = 8.3134  (joule/degC)
-}
-
 NEURON { 
   SUFFIX ichan2
   USEION nat READ enat WRITE inat VALENCE 1
@@ -25,24 +13,37 @@ NEURON {
   RANGE gnat, gkf, gks, gnatbar, gkfbar, gksbar, gl, el, minf, mtau, hinf, htau, nfinf, nftau, inat, ikf, nsinf, nstau, iks
 }
 
-INDEPENDENT {t FROM 0 TO 100 WITH 100 (ms)}
+UNITS {
+  (mA) =(milliamp)
+  (mV) =(millivolt)
+  (uF) = (microfarad)
+  (molar) = (1/liter)
+  (nA) = (nanoamp)
+  (mM) = (millimolar)
+  (um) = (micron)
+}
+
+UNITS {
+  FARADAY = 96520 (coul)
+  R = 8.3134  (joule/degC)
+}
+
+INDEPENDENT {
+  t FROM 0 TO 100 WITH 100 (ms)
+}
 
 PARAMETER {
+  celsius (degC)
   v (mV)
-  celsius = 6.3 (degC)
   dt (ms)
-  enat  (mV)
+  enat (mV)
   gnatbar (mho/cm2)
-  ekf  (mV)
+  ekf (mV)
   gkfbar (mho/cm2)
-  eks  (mV)
+  eks (mV)
   gksbar (mho/cm2)
   gl (mho/cm2)
   el (mV)
-}
-
-STATE {
-  m h nf ns
 }
 
 ASSIGNED {
@@ -64,7 +65,14 @@ ASSIGNED {
   hinf
   nfinf
   nsinf
-} 
+}
+
+STATE {
+  m
+  h
+  nf
+  ns
+}
 
 BREAKPOINT {
   SOLVE state
@@ -77,10 +85,8 @@ BREAKPOINT {
   il = gl * (v-el)
 }
 
-UNITSOFF
-
 INITIAL {
-  calcRates(v)
+  rates(v)
   
   m = minf
   h = hinf
@@ -91,7 +97,7 @@ INITIAL {
 LOCAL q10
 
 PROCEDURE state() {
-  calcRates(v)
+  rates(v)
 
   m = m + (minf - m) * (1 - exp(-dt * q10 / mtau))
   h = h + (hinf - h) * (1 - exp(-dt * q10 / htau))
@@ -100,49 +106,47 @@ PROCEDURE state() {
 }
 
 :Call once to initialize inf at resting v.
-PROCEDURE calcRates(v) {
+PROCEDURE rates(v) {
   LOCAL alpha, beta, sum
   q10 = 3^((celsius - 6.3)/10)
 
   :"m" sodium activation system - act and inact cross at -40
   :"m" is the activation gate for the sodium current. It is voltage-dependent.
-  alpha = -0.3*vtrap((v+60-17),-5)
-  beta = 0.3*vtrap((v+60-45),5)
-  sum = alpha+beta        
-  mtau = 1/sum
-  minf = alpha/sum
+  alpha = -0.3 * vtrap((v + 60 - 17), -5)
+  beta = 0.3 * vtrap((v + 60 - 45), 5)
+  sum = alpha + beta        
+  mtau = 1 / sum
+  minf = alpha / sum
 
   :"h" sodium inactivation system
   :"h" is the inactivation gate for the sodium current. It is also voltage-dependent.
-  alpha = 0.23/exp((v+60+5)/20)
-  beta = 3.33/(1+exp((v+60-47.5)/-10))
-  sum = alpha+beta
-  htau = 1/sum 
-  hinf = alpha/sum 
+  alpha = 0.23 / exp((v + 60 + 5) / 20)
+  beta = 3.33 / (1 + exp((v + 60 - 47.5) / -10))
+  sum = alpha + beta
+  htau = 1 / sum 
+  hinf = alpha / sum 
 
   :"ns" sKDR activation system
   :"ns" is the activation gate for the slow Potassium (K) Rectifier current. It is voltage-dependent.
-  alpha = -0.028*vtrap((v+65-35),-6)
-  beta = 0.1056/exp((v+65-10)/40)
-  sum = alpha+beta        
-  nstau = 1/sum
-  nsinf = alpha/sum
+  alpha = -0.028 * vtrap((v + 65 - 35), -6)
+  beta = 0.1056 / exp((v + 65 - 10) / 40)
+  sum = alpha + beta        
+  nstau = 1 / sum
+  nsinf = alpha / sum
 
   :"nf" fKDR activation system
   :"nf" is the activation gate for the fast Potassium (K) Rectifier current. It is voltage-dependent.
-  alpha = -0.07*vtrap((v+65-47),-6)
-  beta = 0.264/exp((v+65-22)/40)
-  sum = alpha+beta        
-  nftau = 1/sum
-  nfinf = alpha/sum
+  alpha = -0.07 * vtrap((v + 65 - 47), -6)
+  beta = 0.264 / exp((v + 65 - 22) / 40)
+  sum = alpha + beta        
+  nftau = 1 / sum
+  nfinf = alpha / sum
 }
 
-FUNCTION vtrap(x,y) {
-  if (fabs(x/y) < 1e-6) {
-    vtrap = y*(1 - x/y/2)
+FUNCTION vtrap(x, y) {
+  if (fabs(x / y) < 1e-6) {
+    vtrap = y * (1 - x / y / 2)
   } else {
-    vtrap = x/(exp(x/y) - 1)
+    vtrap = x / (exp(x / y) - 1)
   }
 }
-
-UNITSON

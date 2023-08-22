@@ -11,6 +11,7 @@ from cells import BasketCell, GranuleCell
 
 h.load_file("stdrun.hoc")
 
+
 @click.command()
 @click.option("-o", "--output", default="outputs", type=click.Path(exists=True), help="Path to output directory.")
 @click.option("--negative", is_flag=True, help="Use negative current.")
@@ -74,8 +75,19 @@ def simulate_gap_junction(output: str, negative: bool) -> None:
     pv1_v_max = pv1_v[sample_time] - baseline
     pv2_v_max = pv2_v[sample_time] - baseline
 
-    ax.vlines(t[sample_time], ymin=pv1_v[sample_time], ymax=pv1_v[sample_time] + 1, color="red", label="peaks")
-    ax.vlines(t[sample_time], ymin=pv2_v[sample_time], ymax=pv2_v[sample_time] + 1, color="red")
+    ax.vlines(
+        t[sample_time],
+        ymin=pv1_v[sample_time],
+        ymax=pv1_v[sample_time] + 1,
+        color="red",
+        label="peaks",
+    )
+    ax.vlines(
+        t[sample_time],
+        ymin=pv2_v[sample_time],
+        ymax=pv2_v[sample_time] + 1,
+        color="red",
+    )
 
     coefficient = pv2_v_max / pv1_v_max
 
@@ -84,11 +96,12 @@ def simulate_gap_junction(output: str, negative: bool) -> None:
 
     plt.savefig(os.path.join(output, "gap_junction.png" if not negative else "gap_junction_negative.png"))
 
+
 @click.command()
 @click.option("-o", "--output", default="outputs", type=click.Path(exists=True), help="Path to output directory.")
 def simulate_EPSP_propagation(output: str):
     gc = GranuleCell(0)
-    
+
     pv1 = BasketCell(0)
     pv2 = BasketCell(1)
 
@@ -104,7 +117,7 @@ def simulate_EPSP_propagation(output: str):
     h.setpointer(pv2.dendrites[1](0.5)._ref_v, "v_pair", gap1)
     h.setpointer(pv1.dendrites[1](0.5)._ref_v, "v_pair", gap2)
 
-    # supress spikes
+    # suppress spikes
     normalize_stimulus_1 = h.IClamp(pv1.dendrites[0](1))
     normalize_stimulus_1.delay = 100 * ms
     normalize_stimulus_1.dur = 300 * ms
@@ -133,7 +146,7 @@ def simulate_EPSP_propagation(output: str):
 
     stimulus.delay = 200 * ms
     stimulus.dur = 100 * ms
-    stimulus.amp = 0.2 # nA
+    stimulus.amp = 0.2  # nA
 
     # record
     gc_v = h.Vector().record(gc.soma(0.5)._ref_v)
@@ -155,13 +168,19 @@ def simulate_EPSP_propagation(output: str):
 
     # calculate coupling coefficient
     t = np.array(t)
-    pv1_v = np.array(pv1_v)
-    pv2_v = np.array(pv2_v)
+    pv1_v = np.array(pv1_v, dtype=np.float64)
+    pv2_v = np.array(pv2_v, dtype=np.float64)
 
     pv1_v_lmax = signal.argrelmax(pv1_v)[0][1:-1]
     pv2_v_lmax = signal.argrelmax(pv2_v)[0][1:-1]
 
-    axes[1].vlines(t[pv1_v_lmax], ymin=pv1_v[pv1_v_lmax], ymax=pv1_v[pv1_v_lmax] + 1, color="red", label="peaks")
+    axes[1].vlines(
+        t[pv1_v_lmax],
+        ymin=pv1_v[pv1_v_lmax],
+        ymax=pv1_v[pv1_v_lmax] + 1,
+        color="red",
+        label="peaks",
+    )
     axes[1].vlines(t[pv2_v_lmax], ymin=pv2_v[pv2_v_lmax], ymax=pv2_v[pv2_v_lmax] + 1, color="red")
 
     baseline = pv1_v[200 * 40]

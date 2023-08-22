@@ -11,7 +11,7 @@ NEURON {
   USEION nca READ ncai, inca, enca WRITE enca, ncai VALENCE 2
   USEION lca READ lcai, ilca, elca WRITE elca, lcai VALENCE 2
   USEION tca READ tcai, itca, etca WRITE etca, tcai VALENCE 2
-  RANGE caiinf, catau, cai, ncai, lcai,tcai, eca, elca, enca, etca
+  RANGE caiinf, catau, cai, ncai, lcai, tcai, eca, elca, enca, etca
 }
 
 UNITS {
@@ -19,23 +19,28 @@ UNITS {
   (molar) = (1/liter)
   (mM) = (milli/liter)
   (mA) = (milliamp)
-  FARADAY = 96520 (coul)
-  R = 8.3134  (joule/degC)
 }
 
-INDEPENDENT {t FROM 0 TO 100 WITH 100 (ms)}
+UNITS {
+  FARADAY = 96520 (coul)
+  R = 8.3134 (joule/degC)
+}
+
+INDEPENDENT {
+  t FROM 0 TO 100 WITH 100 (ms)
+}
 
 PARAMETER {
-  celsius = 6.3 (degC)
-  depth = 200 (nm)  : assume volume = area*depth
+  celsius (degC)
+  depth = 200 (nm) :assume volume = area*depth
   catau = 9 (ms)
   caiinf = 50.e-6 (mM)
+  cai= 50.e-6 (mM)
   cao = 2 (mM)
   ica (mA/cm2)
   inca (mA/cm2)
   ilca (mA/cm2)
   itca (mA/cm2)
-  cai= 50.e-6 (mM)
 }
 
 ASSIGNED {
@@ -52,21 +57,20 @@ STATE {
 }
 
 INITIAL {
-  ncai=caiinf/3
-  lcai=caiinf/3
-  tcai=caiinf/3
+  ncai = caiinf / 3
+  lcai = caiinf / 3
+  tcai = caiinf / 3
   cai = caiinf  
-  eca = 130  :ktf() * log(cao/caiinf)  
+  eca = 130 :ktf() * log(cao/caiinf)  
   enca = eca
   elca = eca
   etca = eca
 }
 
-
 BREAKPOINT {
   SOLVE integrate METHOD derivimplicit
-  cai = ncai+lcai+tcai  
-  eca = ktf() * log(cao/cai)  
+  cai = ncai + lcai + tcai  
+  eca = ktf() * log(cao / cai)  
   enca = eca
   elca = eca
   etca = eca
@@ -79,5 +83,5 @@ DERIVATIVE integrate {
 }
 
 FUNCTION ktf() (mV) {
-  ktf = (1000)*R*(celsius +273.15)/(2*FARADAY)
+  ktf = (1000) * R * (celsius + 273.15) / (2 * FARADAY)
 } 

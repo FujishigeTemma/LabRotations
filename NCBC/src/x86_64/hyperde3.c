@@ -29,7 +29,7 @@ extern double hoc_Exp(double);
 #define nrn_jacob _nrn_jacob__hyperde3
 #define nrn_state _nrn_state__hyperde3
 #define _net_receive _net_receive__hyperde3 
-#define calcRates calcRates__hyperde3 
+#define rates rates__hyperde3 
 #define states states__hyperde3 
  
 #define _threadargscomma_ _p, _ppvar, _thread, _nt,
@@ -97,18 +97,18 @@ extern double hoc_Exp(double);
 #define ehyhtf_columnindex 24
 #define ehyhts _p[25]
 #define ehyhts_columnindex 25
-#define Dhyf _p[26]
-#define Dhyf_columnindex 26
-#define Dhys _p[27]
-#define Dhys_columnindex 27
-#define Dhyhtf _p[28]
-#define Dhyhtf_columnindex 28
-#define Dhyhts _p[29]
-#define Dhyhts_columnindex 29
-#define ihyhtf _p[30]
-#define ihyhtf_columnindex 30
-#define ihyhts _p[31]
-#define ihyhts_columnindex 31
+#define ihyhtf _p[26]
+#define ihyhtf_columnindex 26
+#define ihyhts _p[27]
+#define ihyhts_columnindex 27
+#define Dhyf _p[28]
+#define Dhyf_columnindex 28
+#define Dhys _p[29]
+#define Dhys_columnindex 29
+#define Dhyhtf _p[30]
+#define Dhyhtf_columnindex 30
+#define Dhyhts _p[31]
+#define Dhyhts_columnindex 31
 #define v _p[32]
 #define v_columnindex 32
 #define _g _p[33]
@@ -144,7 +144,7 @@ extern "C" {
  /* external NEURON variables */
  extern double celsius;
  /* declaration of user functions */
- static void _hoc_calcRates(void);
+ static void _hoc_rates(void);
  static void _hoc_states(void);
  static int _mechtype;
 extern void _nrn_cacheloop_reg(int, int);
@@ -175,7 +175,7 @@ extern void hoc_reg_nmodl_filename(int, const char*);
  /* connect user functions to hoc names */
  static VoidFunc hoc_intfunc[] = {
  "setdata_hyperde3", _hoc_setdata,
- "calcRates_hyperde3", _hoc_calcRates,
+ "rates_hyperde3", _hoc_rates,
  "states_hyperde3", _hoc_states,
  0, 0
 };
@@ -357,11 +357,11 @@ static int error;
 static int _ninits = 0;
 static int _match_recurse=1;
 static void _modl_cleanup(){ _match_recurse=1;}
-static int calcRates(_threadargsprotocomma_ double);
+static int rates(_threadargsprotocomma_ double);
 static int states(_threadargsproto_);
  
 static int  states ( _threadargsproto_ ) {
-   calcRates ( _threadargscomma_ v ) ;
+   rates ( _threadargscomma_ v ) ;
    hyf = hyf + ( hyfinf - hyf ) * ( 1.0 - exp ( - dt * _zq10 / hyftau ) ) ;
    hys = hys + ( hysinf - hys ) * ( 1.0 - exp ( - dt * _zq10 / hystau ) ) ;
    hyhtf = hyhtf + ( hyhtfinf - hyhtf ) * ( 1.0 - exp ( - dt * _zq10 / hyhtftau ) ) ;
@@ -379,7 +379,7 @@ static void _hoc_states(void) {
  hoc_retpushx(_r);
 }
  
-static int  calcRates ( _threadargsprotocomma_ double _lv ) {
+static int  rates ( _threadargsprotocomma_ double _lv ) {
    double _lalpha , _lbeta , _lsum ;
  _zq10 = pow( 3.0 , ( ( celsius - 6.3 ) / 10.0 ) ) ;
    hyfinf = 1.0 / ( 1.0 + exp ( ( _lv + 91.0 ) / 10.0 ) ) ;
@@ -392,14 +392,14 @@ static int  calcRates ( _threadargsprotocomma_ double _lv ) {
    hyhtstau = 227.3 + 170.7 * exp ( - 0.5 * pow( ( ( _lv + 80.4 ) / 11.0 ) , 2.0 ) ) ;
     return 0; }
  
-static void _hoc_calcRates(void) {
+static void _hoc_rates(void) {
   double _r;
    double* _p; Datum* _ppvar; Datum* _thread; NrnThread* _nt;
    if (_extcall_prop) {_p = _extcall_prop->param; _ppvar = _extcall_prop->dparam;}else{ _p = (double*)0; _ppvar = (Datum*)0; }
   _thread = _extcall_thread;
   _nt = nrn_threads;
  _r = 1.;
- calcRates ( _p, _ppvar, _thread, _nt, *getarg(1) );
+ rates ( _p, _ppvar, _thread, _nt, *getarg(1) );
  hoc_retpushx(_r);
 }
  
@@ -435,7 +435,7 @@ static void initmodel(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt)
   hys = hys0;
   hyf = hyf0;
  {
-   calcRates ( _threadargscomma_ v ) ;
+   rates ( _threadargscomma_ v ) ;
    hyf = hyfinf ;
    hys = hysinf ;
    hyhtf = hyhtfinf ;
@@ -628,6 +628,18 @@ static const char* nmodl_file_text =
   "distal dendritic Ih channel kinetics for both HT and Control anlimals\n"
   "ENDCOMMENT\n"
   "\n"
+  "NEURON {\n"
+  "  SUFFIX hyperde3\n"
+  "  USEION hyf READ ehyf WRITE ihyf VALENCE 1\n"
+  "  USEION hys READ ehys WRITE ihys VALENCE 1\n"
+  "  USEION hyhtf READ ehyhtf WRITE ihyhtf VALENCE 1\n"
+  "  USEION hyhts READ ehyhts WRITE ihyhts VALENCE 1\n"
+  "  RANGE ghyf, ghys, ghyhtf, ghyhts\n"
+  "  RANGE ghyfbar, ghysbar, ghyhtfbar, ghyhtsbar\n"
+  "  RANGE hyfinf, hysinf, hyftau, hystau\n"
+  "  RANGE hyhtfinf, hyhtsinf, hyhtftau, hyhtstau, ihyf, ihys\n"
+  "}\n"
+  "\n"
   "UNITS {\n"
   "  (mA) =(milliamp)\n"
   "  (mV) =(millivolt)\n"
@@ -636,27 +648,20 @@ static const char* nmodl_file_text =
   "  (nA) = (nanoamp)\n"
   "  (mM) = (millimolar)\n"
   "  (um) = (micron)\n"
+  "}\n"
+  "\n"
+  "UNITS {\n"
   "  FARADAY = 96520 (coul)\n"
   "  R = 8.3134 (joule/degC)\n"
   "}\n"
   "\n"
-  "NEURON {\n"
-  "  SUFFIX hyperde3\n"
-  "  USEION hyf READ ehyf WRITE ihyf VALENCE 1\n"
-  "  USEION hys READ ehys WRITE ihys VALENCE 1\n"
-  "  USEION hyhtf READ ehyhtf WRITE ihyhtf VALENCE 1\n"
-  "  USEION hyhts READ ehyhts WRITE ihyhts VALENCE 1\n"
-  "  RANGE  ghyf, ghys, ghyhtf, ghyhts\n"
-  "  RANGE ghyfbar, ghysbar, ghyhtfbar, ghyhtsbar\n"
-  "  RANGE hyfinf, hysinf, hyftau, hystau\n"
-  "  RANGE hyhtfinf, hyhtsinf, hyhtftau, hyhtstau, ihyf, ihys\n"
+  "INDEPENDENT {\n"
+  "  t FROM 0 TO 100 WITH 100 (ms)\n"
   "}\n"
-  "\n"
-  "INDEPENDENT {t FROM 0 TO 100 WITH 100 (ms)}\n"
   "\n"
   "PARAMETER {\n"
   "  v (mV)\n"
-  "  celsius = 6.3 (degC)\n"
+  "  celsius (degC)\n"
   "  dt (ms) \n"
   "\n"
   "  ghyfbar (mho/cm2)\n"
@@ -667,10 +672,6 @@ static const char* nmodl_file_text =
   "  ghyhtsbar (mho/cm2)\n"
   "  ehyhtf (mV)\n"
   "  ehyhts (mV)\n"
-  "}\n"
-  "\n"
-  "STATE {\n"
-  "  hyf hys hyhtf hyhts\n"
   "}\n"
   "\n"
   "ASSIGNED {\n"
@@ -695,6 +696,13 @@ static const char* nmodl_file_text =
   "  hyhtstau (ms)\n"
   "} \n"
   "\n"
+  "STATE {\n"
+  "  hyf\n"
+  "  hys\n"
+  "  hyhtf\n"
+  "  hyhts\n"
+  "}\n"
+  "\n"
   "BREAKPOINT {\n"
   "  SOLVE states\n"
   "\n"
@@ -703,16 +711,14 @@ static const char* nmodl_file_text =
   "  ghys = ghysbar * hys*hys\n"
   "  ihys = ghys * (v-ehys)\n"
   "\n"
-  "  ghyhtf = ghyhtfbar * hyhtf* hyhtf\n"
-  "  ihyhtf = ghyhtf * (v-ehyhtf)\n"
-  "  ghyhts = ghyhtsbar * hyhts* hyhts\n"
-  "  ihyhts = ghyhts * (v-ehyhts)\n"
+  "  ghyhtf = ghyhtfbar * hyhtf * hyhtf\n"
+  "  ihyhtf = ghyhtf * (v - ehyhtf)\n"
+  "  ghyhts = ghyhtsbar * hyhts * hyhts\n"
+  "  ihyhts = ghyhts * (v - ehyhts)\n"
   "}\n"
   "\n"
-  "UNITSOFF\n"
-  "\n"
   "INITIAL {\n"
-  "  calcRates(v)\n"
+  "  rates(v)\n"
   "  \n"
   "  hyf = hyfinf\n"
   "  hys = hysinf\n"
@@ -723,7 +729,7 @@ static const char* nmodl_file_text =
   "LOCAL q10\n"
   "\n"
   "PROCEDURE states() {\n"
-  "  calcRates(v)\n"
+  "  rates(v)\n"
   "\n"
   "  hyf = hyf + (hyfinf - hyf) * (1 - exp(-dt * q10 / hyftau))\n"
   "  hys = hys + (hysinf - hys) * (1 - exp(-dt * q10 / hystau))\n"
@@ -731,7 +737,7 @@ static const char* nmodl_file_text =
   "  hyhts = hyhts + (hyhtsinf - hyhts) * (1 - exp(-dt * q10 / hyhtstau))\n"
   "}\n"
   "\n"
-  "PROCEDURE calcRates(v) {\n"
+  "PROCEDURE rates(v) {\n"
   "  LOCAL  alpha, beta, sum\n"
   "  q10 = 3^((celsius - 6.3)/10)\n"
   "\n"
@@ -751,7 +757,5 @@ static const char* nmodl_file_text =
   "  hyhtsinf = 1 / (1 + exp((v + 87) / 10))\n"
   "  hyhtstau = 227.3 + 170.7 * exp(-0.5 * ((v + 80.4) / 11)^2)\n"
   "}\n"
-  "\n"
-  "UNITSON\n"
   ;
 #endif

@@ -17,23 +17,33 @@ tasks:
       - run:positive
       - run:negative
       - run:propagation
-  run:positive:
+  run:gap:
     dir: src
     cmds:
-      - rye run python cli.py simulate-gap-junction -o ../outputs
-  run:negative:
-    dir: src
-    cmds:
-      - rye run python cli.py simulate-gap-junction -o ../outputs --negative
+      - rye run python cli.py simulate-gap-junction -o ../outputs {{ .CLI_ARGS }}
   run:propagation:
     dir: src
     cmds:
       - rye run python cli.py simulate-epsp-propagation -o ../outputs
-  run:pre-check:
-    dir: src
-    cmds:
-      - rye run python cli.py analyze-intrinsic-properties -o ../outputs
   run:net:
     dir: src
     cmds:
-      - rye run python cli.py simulate-dentate-gyrus -o ../outputs
+      - rye run python cli.py simulate-dentate-gyrus -o ../outputs {{ .CLI_ARGS }}
+  analyze:cells:
+    dir: src
+    cmds:
+      - rye run python cli.py analyze-intrinsic-properties -o ../outputs
+  analyze:dentate-gyrus:
+    dir: src
+    cmds:
+      - rye run python cli.py analyze-dentate-gyrus -o ../outputs {{ .CLI_ARGS }}
+  analyze:dentate-gyrus:all:
+    dir: src
+    vars:
+      IDS:
+        sh: echo "SELECT id FROM jobs;" | sqlite3 ../outputs/dentate_gyrus.sqlite
+    cmds:
+      - for: { var: IDS, as: ID }
+        task: analyze:dentate-gyrus
+        vars:
+          CLI_ARGS: --job-id {{ .ID }}

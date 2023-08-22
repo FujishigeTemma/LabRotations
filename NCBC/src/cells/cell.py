@@ -1,6 +1,6 @@
 import csv
-from collections.abc import Iterator
 from dataclasses import dataclass
+from functools import lru_cache
 
 from neuron import h
 
@@ -12,7 +12,7 @@ class Cell:
     Usage
     -----
     >>> from cells import Cell
-    >>> 
+    >>>
     >>> class MyCell(Cell):
     >>>     name = "mycell"
     >>>
@@ -50,6 +50,7 @@ class Cell:
         attribute_name    section_name    value
         ```
     """
+
     name: str
 
     def __init__(self, index: int):
@@ -58,7 +59,7 @@ class Cell:
         self.dendrites = []
         self._setup_morphology()
         self._setup_biophysics()
-    
+
     def _setup_morphology(self) -> None:
         raise NotImplementedError("_setup_morphology must be implemented")
 
@@ -91,7 +92,7 @@ class Cell:
             self.sections.append(dendrite)
             self.dendrites.append(dendrite)
             parent_section = dendrite
-    
+
     def __str__(self):
         return self.id
 
@@ -108,15 +109,13 @@ class Cell:
         return sections
 
     def load_biophysics_from_file(self, path: str):
-        parameters: list[Parameter] = []
-        for parameter in parameter_reader(path):
-            parameters.append(parameter)
+        parameters = read_parameters_from(path)
 
         mechanisms_for_each_section: dict[str, list[str]] = {}
         for parameter in parameters:
             if mechanisms_for_each_section.get(parameter.section_name) is None:
                 mechanisms_for_each_section[parameter.section_name] = []
-            
+
             splited = parameter.attribute_name.split("_")
             if len(splited) == 2:
                 mechanisms_for_each_section[parameter.section_name].append(splited[1])
@@ -127,12 +126,13 @@ class Cell:
             for section in sections:
                 for mechanism in mechanisms:
                     section.insert(mechanism)
-        
+
         # set section parameters
         for parameter in parameters:
             sections = self.get_sections_by_name(parameter.section_name)
             for section in sections:
                 setattr(section, parameter.attribute_name, parameter.value)
+
 
 @dataclass(frozen=True)
 class Parameter:
@@ -140,7 +140,11 @@ class Parameter:
     section_name: str
     value: float
 
-def parameter_reader(path: str) -> Iterator[Parameter]:
+
+@lru_cache(maxsize=None)
+def read_parameters_from(path: str) -> list[Parameter]:
+    parameters: list[Parameter] = []
+
     with open(path, "r") as f:
         reader = csv.reader(f, delimiter="\t")
         for row in reader:
@@ -148,9 +152,11 @@ def parameter_reader(path: str) -> Iterator[Parameter]:
                 continue
             if len(row) != 3:
                 raise ValueError("Each row must have 3 columns")
-            
+
             attribute_name = row[0]
             section_name = row[1]
             value = float(row[2])
-    
-            yield Parameter(attribute_name, section_name, value)
+
+            parameters.append(Parameter(attribute_name, section_name, value))
+
+    return parameters

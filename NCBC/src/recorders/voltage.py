@@ -1,4 +1,6 @@
+import h5py as h5
 import matplotlib.pyplot as plt
+import numpy as np
 from neuron import h
 
 from cells import Cell
@@ -18,6 +20,16 @@ class VoltageRecorder:
                 records.append(recordVoltage(cell))
             self.records_by_population_id[population.id] = records
 
+    def save(self, path: str):
+        with h5.File(path, "a") as f:
+            for population_id, records in self.records_by_population_id.items():
+                dataset = f.require_dataset(
+                    f"voltages/{population_id}",
+                    shape=(len(records),),
+                    dtype=h5.vlen_dtype(np.float64),
+                )
+                dataset[:] = [record.as_numpy() for record in records]
+
     def plot(self):
         fig, axes = plt.subplots(nrows=len(self.records_by_population_id), ncols=1, figsize=(8.27, 11.69))
 
@@ -27,10 +39,11 @@ class VoltageRecorder:
             axes[i].plot(self.t, records[0].as_numpy())
             axes[i].set_ylabel(population_id)
             axes[i].set_xlim(0, 600)
-        
+
         axes[-1].set_xlabel("Time (ms)")
-        
+
         return fig
+
 
 def recordVoltage(cell: Cell):
     v = h.Vector()

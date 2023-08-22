@@ -29,7 +29,7 @@ extern double hoc_Exp(double);
 #define nrn_jacob _nrn_jacob__gskch
 #define nrn_state _nrn_state__gskch
 #define _net_receive _net_receive__gskch 
-#define calcRate calcRate__gskch 
+#define rates rates__gskch 
 #define state state__gskch 
  
 #define _threadargscomma_ _p, _ppvar, _thread, _nt,
@@ -96,7 +96,7 @@ extern "C" {
  /* external NEURON variables */
  extern double celsius;
  /* declaration of user functions */
- static void _hoc_calcRate(void);
+ static void _hoc_rates(void);
  static void _hoc_state(void);
  static int _mechtype;
 extern void _nrn_cacheloop_reg(int, int);
@@ -127,7 +127,7 @@ extern void hoc_reg_nmodl_filename(int, const char*);
  /* connect user functions to hoc names */
  static VoidFunc hoc_intfunc[] = {
  "setdata_gskch", _hoc_setdata,
- "calcRate_gskch", _hoc_calcRate,
+ "rates_gskch", _hoc_rates,
  "state_gskch", _hoc_state,
  0, 0
 };
@@ -271,12 +271,12 @@ static int error;
 static int _ninits = 0;
 static int _match_recurse=1;
 static void _modl_cleanup(){ _match_recurse=1;}
-static int calcRate(_threadargsprotocomma_ double);
+static int rates(_threadargsprotocomma_ double);
 static int state(_threadargsproto_);
  
 static int  state ( _threadargsproto_ ) {
    cai = ncai + lcai + tcai ;
-   calcRate ( _threadargscomma_ cai ) ;
+   rates ( _threadargscomma_ cai ) ;
    q = q + ( qinf - q ) * ( 1.0 - exp ( - dt * _zq10 / qtau ) * _zq10 ) ;
     return 0; }
  
@@ -291,7 +291,7 @@ static void _hoc_state(void) {
  hoc_retpushx(_r);
 }
  
-static int  calcRate ( _threadargsprotocomma_ double _lcai ) {
+static int  rates ( _threadargsprotocomma_ double _lcai ) {
    double _lalpha , _lbeta ;
  _zq10 = pow( 3.0 , ( ( celsius - 6.3 ) / 10.0 ) ) ;
    _lalpha = 1.25e1 * _lcai * _lcai ;
@@ -300,14 +300,14 @@ static int  calcRate ( _threadargsprotocomma_ double _lcai ) {
    qinf = _lalpha * qtau ;
     return 0; }
  
-static void _hoc_calcRate(void) {
+static void _hoc_rates(void) {
   double _r;
    double* _p; Datum* _ppvar; Datum* _thread; NrnThread* _nt;
    if (_extcall_prop) {_p = _extcall_prop->param; _ppvar = _extcall_prop->dparam;}else{ _p = (double*)0; _ppvar = (Datum*)0; }
   _thread = _extcall_thread;
   _nt = nrn_threads;
  _r = 1.;
- calcRate ( _p, _ppvar, _thread, _nt, *getarg(1) );
+ rates ( _p, _ppvar, _thread, _nt, *getarg(1) );
  hoc_retpushx(_r);
 }
  
@@ -344,7 +344,7 @@ static void initmodel(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt)
   q = q0;
  {
    cai = ncai + lcai + tcai ;
-   calcRate ( _threadargscomma_ cai ) ;
+   rates ( _threadargscomma_ cai ) ;
    q = qinf ;
    }
  
@@ -525,10 +525,12 @@ static const char* nmodl_file_text =
   "  RANGE gsk, gskbar, qinf, qtau, isk\n"
   "}\n"
   "\n"
-  "INDEPENDENT {t FROM 0 TO 1 WITH 1 (ms)}\n"
+  "INDEPENDENT {\n"
+  "  t FROM 0 TO 1 WITH 1 (ms)\n"
+  "}\n"
   "\n"
   "PARAMETER {\n"
-  "  celsius=6.3 (degC)\n"
+  "  celsius (degC)\n"
   "  v (mV)\n"
   "  dt (ms)\n"
   "  gskbar (mho/cm2)\n"
@@ -544,9 +546,11 @@ static const char* nmodl_file_text =
   "}\n"
   "\n"
   "ASSIGNED {\n"
-  "  isk (mA/cm2) gsk (mho/cm2) qinf qtau (ms)\n"
+  "  isk (mA/cm2)\n"
+  "  gsk (mho/cm2)\n"
+  "  qinf\n"
+  "  qtau (ms)\n"
   "}\n"
-  "\n"
   "\n"
   "BREAKPOINT {\n"
   "  SOLVE state\n"
@@ -554,11 +558,9 @@ static const char* nmodl_file_text =
   "  isk = gsk * (v-esk)\n"
   "}\n"
   "\n"
-  "UNITSOFF\n"
-  "\n"
   "INITIAL {\n"
   "  cai = ncai + lcai + tcai  \n"
-  "  calcRate(cai)\n"
+  "  rates(cai)\n"
   "  q = qinf\n"
   "}\n"
   "\n"
@@ -566,11 +568,12 @@ static const char* nmodl_file_text =
   "\n"
   "PROCEDURE state() {\n"
   "  cai = ncai + lcai + tcai\n"
-  "  calcRate(cai)\n"
-  "  q = q + (qinf - q) * (1 - exp(-dt*q10/qtau) * q10)\n"
+  "  rates(cai)\n"
+  "\n"
+  "  q = q + (qinf - q) * (1 - exp(-dt * q10 / qtau) * q10)\n"
   "}\n"
   "\n"
-  "PROCEDURE calcRate(cai) {\n"
+  "PROCEDURE rates(cai) {\n"
   "  LOCAL alpha, beta\n"
   "  q10 = 3^((celsius - 6.3)/10)\n"
   "  \n"
@@ -580,7 +583,5 @@ static const char* nmodl_file_text =
   "  qtau = 1 / (alpha + beta)\n"
   "  qinf = alpha * qtau\n"
   "}\n"
-  "\n"
-  "UNITSON\n"
   ;
 #endif

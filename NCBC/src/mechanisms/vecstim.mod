@@ -12,7 +12,7 @@ INITIAL {
   currentIndex = 0
   processElement()
   if (currentIndex > 0) {
-      net_send(eventTime - t, 1)
+    net_send(eventTime - t, 1)
   }
 }
 

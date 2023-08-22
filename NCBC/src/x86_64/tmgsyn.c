@@ -317,18 +317,18 @@ static void _net_receive (Point_process* _pnt, double* _args, double _lflag)
      _args[3] = U ;
      }
    if ( tau_facilition > 0.0 ) {
-       _args[3] = _args[3] + U * ( 1.0 - _args[3] )  ;
+     _args[3] = _args[3] + U * ( 1.0 - _args[3] ) ;
      }
-       if (nrn_netrec_state_adjust && !cvode_active_){
+     if (nrn_netrec_state_adjust && !cvode_active_){
     /* discon state adjustment for cnexp case (rate uses no local variable) */
     double __state = g;
-    double __primary = (g + _args[0] * x * _args[3] ) - __state;
+    double __primary = (g + _args[0] * x * _args[3]) - __state;
      __primary += ( 1. - exp( 0.5*dt*( ( - 1.0 ) / tau_1 ) ) )*( - ( 0.0 ) / ( ( - 1.0 ) / tau_1 ) - __primary );
     g += __primary;
   } else {
- g = g + _args[0] * x * _args[3]  ;
+ g = g + _args[0] * x * _args[3] ;
      }
-   _args[1] = _args[1] + x * _args[3]  ;
+ _args[1] = _args[1] + x * _args[3] ;
    _args[4] = t ;
    } }
  
@@ -607,7 +607,6 @@ static const char* nmodl_file_text =
   "The printf() statements are for testing purposes only.\n"
   "ENDCOMMENT\n"
   "\n"
-  "\n"
   "NEURON {\n"
   "  POINT_PROCESS tmgsyn\n"
   "  RANGE e, i\n"
@@ -624,7 +623,7 @@ static const char* nmodl_file_text =
   "PARAMETER {\n"
   "  : e = -90 mV for inhibitory synapses,\n"
   "  :     0 mV for excitatory\n"
-  "  e = -90  (mV)\n"
+  "  e = -90 (mV)\n"
   "  : tau_1 was the same for inhibitory and excitatory synapses\n"
   "  : in the models used by T et al.\n"
   "  tau_1 = 3 (ms) < 1e-9, 1e9 >\n"
@@ -654,42 +653,43 @@ static const char* nmodl_file_text =
   "}\n"
   "\n"
   "INITIAL {\n"
-  "  g=0\n"
+  "  g = 0\n"
   "}\n"
   "\n"
   "BREAKPOINT {\n"
   "  SOLVE state METHOD cnexp\n"
-  "  i = g*(v - e)\n"
+  "\n"
+  "  i = g * (v - e)\n"
   "}\n"
   "\n"
   "DERIVATIVE state {\n"
-  "  g' = -g/tau_1\n"
+  "  g' = -g / tau_1\n"
   "}\n"
   "\n"
   "NET_RECEIVE(weight (umho), y, z, u, tsyn (ms)) {\n"
-  "INITIAL {\n"
-  ": these are in NET_RECEIVE to be per-stream\n"
-  "  y = 0\n"
-  "  z = 0\n"
-  ": u = 0\n"
-  "  u = u0\n"
-  "  tsyn = t\n"
-  ": this header will appear once per stream\n"
-  ": printf(\"t\\t t-tsyn\\t y\\t z\\t u\\t newu\\t g\\t dg\\t newg\\t newy\\n\")\n"
-  "}\n"
+  "  INITIAL {\n"
+  "  : these are in NET_RECEIVE to be per-stream\n"
+  "    y = 0\n"
+  "    z = 0\n"
+  "  : u = 0\n"
+  "    u = u0\n"
+  "    tsyn = t\n"
+  "  : this header will appear once per stream\n"
+  "  : printf(\"t\\t t-tsyn\\t y\\t z\\t u\\t newu\\t g\\t dg\\t newg\\t newy\\n\")\n"
+  "  }\n"
   "\n"
   "  : first calculate z at event-\n"
-  "  :   based on prior y and z\n"
-  "  z = z*exp(-(t - tsyn)/tau_recovery)\n"
-  "  z = z + ( y*(exp(-(t - tsyn)/tau_1) - exp(-(t - tsyn)/tau_recovery)) / ((tau_1/tau_recovery)-1) )\n"
+  "  : based on prior y and z\n"
+  "  z = z * exp(-(t - tsyn) / tau_recovery)\n"
+  "  z = z + (y * (exp(-(t - tsyn) / tau_1) - exp(-(t - tsyn) / tau_recovery)) / ((tau_1 / tau_recovery) - 1))\n"
   "  : now calc y at event-\n"
-  "  y = y*exp(-(t - tsyn)/tau_1)\n"
+  "  y = y * exp(-(t - tsyn) / tau_1)\n"
   "\n"
-  "  x = 1-y-z\n"
+  "  x = 1 - y - z\n"
   "\n"
   "  : calc u at event--\n"
   "  if (tau_facilition > 0) {\n"
-  "    u = u*exp(-(t - tsyn)/tau_facilition)\n"
+  "    u = u * exp(-(t - tsyn) / tau_facilition)\n"
   "  } else {\n"
   "    u = U\n"
   "  }\n"
@@ -697,13 +697,13 @@ static const char* nmodl_file_text =
   ": printf(\"%g\\t%g\\t%g\\t%g\\t%g\", t, t-tsyn, y, z, u)\n"
   "\n"
   "  if (tau_facilition > 0) {\n"
-  "    state_discontinuity(u, u + U*(1-u))\n"
+  "    u = u + U * (1-u)\n"
   "  }\n"
   "\n"
   ": printf(\"\\t%g\\t%g\\t%g\", u, g, weight*x*u)\n"
   "\n"
-  "  state_discontinuity(g, g + weight*x*u)\n"
-  "  state_discontinuity(y, y + x*u)\n"
+  "  g = g + weight * x * u\n"
+  "  y = y + x * u\n"
   "\n"
   "  tsyn = t\n"
   "\n"

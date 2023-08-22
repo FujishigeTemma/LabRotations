@@ -29,7 +29,7 @@ extern double hoc_Exp(double);
 #define nrn_jacob _nrn_jacob__ichan2
 #define nrn_state _nrn_state__ichan2
 #define _net_receive _net_receive__ichan2 
-#define calcRates calcRates__ichan2 
+#define rates rates__ichan2 
 #define state state__ichan2 
  
 #define _threadargscomma_ _p, _ppvar, _thread, _nt,
@@ -139,7 +139,7 @@ extern "C" {
  /* external NEURON variables */
  extern double celsius;
  /* declaration of user functions */
- static void _hoc_calcRates(void);
+ static void _hoc_rates(void);
  static void _hoc_state(void);
  static void _hoc_vtrap(void);
  static int _mechtype;
@@ -171,7 +171,7 @@ extern void hoc_reg_nmodl_filename(int, const char*);
  /* connect user functions to hoc names */
  static VoidFunc hoc_intfunc[] = {
  "setdata_ichan2", _hoc_setdata,
- "calcRates_ichan2", _hoc_calcRates,
+ "rates_ichan2", _hoc_rates,
  "state_ichan2", _hoc_state,
  "vtrap_ichan2", _hoc_vtrap,
  0, 0
@@ -350,11 +350,11 @@ static int error;
 static int _ninits = 0;
 static int _match_recurse=1;
 static void _modl_cleanup(){ _match_recurse=1;}
-static int calcRates(_threadargsprotocomma_ double);
+static int rates(_threadargsprotocomma_ double);
 static int state(_threadargsproto_);
  
 static int  state ( _threadargsproto_ ) {
-   calcRates ( _threadargscomma_ v ) ;
+   rates ( _threadargscomma_ v ) ;
    m = m + ( minf - m ) * ( 1.0 - exp ( - dt * _zq10 / mtau ) ) ;
    h = h + ( hinf - h ) * ( 1.0 - exp ( - dt * _zq10 / htau ) ) ;
    nf = nf + ( nfinf - nf ) * ( 1.0 - exp ( - dt * _zq10 / nftau ) ) ;
@@ -372,7 +372,7 @@ static void _hoc_state(void) {
  hoc_retpushx(_r);
 }
  
-static int  calcRates ( _threadargsprotocomma_ double _lv ) {
+static int  rates ( _threadargsprotocomma_ double _lv ) {
    double _lalpha , _lbeta , _lsum ;
  _zq10 = pow( 3.0 , ( ( celsius - 6.3 ) / 10.0 ) ) ;
    _lalpha = - 0.3 * vtrap ( _threadargscomma_ ( _lv + 60.0 - 17.0 ) , - 5.0 ) ;
@@ -397,14 +397,14 @@ static int  calcRates ( _threadargsprotocomma_ double _lv ) {
    nfinf = _lalpha / _lsum ;
     return 0; }
  
-static void _hoc_calcRates(void) {
+static void _hoc_rates(void) {
   double _r;
    double* _p; Datum* _ppvar; Datum* _thread; NrnThread* _nt;
    if (_extcall_prop) {_p = _extcall_prop->param; _ppvar = _extcall_prop->dparam;}else{ _p = (double*)0; _ppvar = (Datum*)0; }
   _thread = _extcall_thread;
   _nt = nrn_threads;
  _r = 1.;
- calcRates ( _p, _ppvar, _thread, _nt, *getarg(1) );
+ rates ( _p, _ppvar, _thread, _nt, *getarg(1) );
  hoc_retpushx(_r);
 }
  
@@ -459,7 +459,7 @@ static void initmodel(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt)
   ns = ns0;
   nf = nf0;
  {
-   calcRates ( _threadargscomma_ v ) ;
+   rates ( _threadargscomma_ v ) ;
    m = minf ;
    h = hinf ;
    nf = nfinf ;
@@ -640,18 +640,6 @@ static const char* nmodl_file_text =
   "the effect of conductivity change in soma.\n"
   "ENDCOMMENT\n"
   "\n"
-  "UNITS {\n"
-  "  (mA) =(milliamp)\n"
-  "  (mV) =(millivolt)\n"
-  "  (uF) = (microfarad)\n"
-  "  (molar) = (1/liter)\n"
-  "  (nA) = (nanoamp)\n"
-  "  (mM) = (millimolar)\n"
-  "  (um) = (micron)\n"
-  "  FARADAY = 96520 (coul)\n"
-  "  R = 8.3134  (joule/degC)\n"
-  "}\n"
-  "\n"
   "NEURON { \n"
   "  SUFFIX ichan2\n"
   "  USEION nat READ enat WRITE inat VALENCE 1\n"
@@ -661,24 +649,37 @@ static const char* nmodl_file_text =
   "  RANGE gnat, gkf, gks, gnatbar, gkfbar, gksbar, gl, el, minf, mtau, hinf, htau, nfinf, nftau, inat, ikf, nsinf, nstau, iks\n"
   "}\n"
   "\n"
-  "INDEPENDENT {t FROM 0 TO 100 WITH 100 (ms)}\n"
+  "UNITS {\n"
+  "  (mA) =(milliamp)\n"
+  "  (mV) =(millivolt)\n"
+  "  (uF) = (microfarad)\n"
+  "  (molar) = (1/liter)\n"
+  "  (nA) = (nanoamp)\n"
+  "  (mM) = (millimolar)\n"
+  "  (um) = (micron)\n"
+  "}\n"
+  "\n"
+  "UNITS {\n"
+  "  FARADAY = 96520 (coul)\n"
+  "  R = 8.3134  (joule/degC)\n"
+  "}\n"
+  "\n"
+  "INDEPENDENT {\n"
+  "  t FROM 0 TO 100 WITH 100 (ms)\n"
+  "}\n"
   "\n"
   "PARAMETER {\n"
+  "  celsius (degC)\n"
   "  v (mV)\n"
-  "  celsius = 6.3 (degC)\n"
   "  dt (ms)\n"
-  "  enat  (mV)\n"
+  "  enat (mV)\n"
   "  gnatbar (mho/cm2)\n"
-  "  ekf  (mV)\n"
+  "  ekf (mV)\n"
   "  gkfbar (mho/cm2)\n"
-  "  eks  (mV)\n"
+  "  eks (mV)\n"
   "  gksbar (mho/cm2)\n"
   "  gl (mho/cm2)\n"
   "  el (mV)\n"
-  "}\n"
-  "\n"
-  "STATE {\n"
-  "  m h nf ns\n"
   "}\n"
   "\n"
   "ASSIGNED {\n"
@@ -700,7 +701,14 @@ static const char* nmodl_file_text =
   "  hinf\n"
   "  nfinf\n"
   "  nsinf\n"
-  "} \n"
+  "}\n"
+  "\n"
+  "STATE {\n"
+  "  m\n"
+  "  h\n"
+  "  nf\n"
+  "  ns\n"
+  "}\n"
   "\n"
   "BREAKPOINT {\n"
   "  SOLVE state\n"
@@ -713,10 +721,8 @@ static const char* nmodl_file_text =
   "  il = gl * (v-el)\n"
   "}\n"
   "\n"
-  "UNITSOFF\n"
-  "\n"
   "INITIAL {\n"
-  "  calcRates(v)\n"
+  "  rates(v)\n"
   "  \n"
   "  m = minf\n"
   "  h = hinf\n"
@@ -727,7 +733,7 @@ static const char* nmodl_file_text =
   "LOCAL q10\n"
   "\n"
   "PROCEDURE state() {\n"
-  "  calcRates(v)\n"
+  "  rates(v)\n"
   "\n"
   "  m = m + (minf - m) * (1 - exp(-dt * q10 / mtau))\n"
   "  h = h + (hinf - h) * (1 - exp(-dt * q10 / htau))\n"
@@ -736,51 +742,49 @@ static const char* nmodl_file_text =
   "}\n"
   "\n"
   ":Call once to initialize inf at resting v.\n"
-  "PROCEDURE calcRates(v) {\n"
+  "PROCEDURE rates(v) {\n"
   "  LOCAL alpha, beta, sum\n"
   "  q10 = 3^((celsius - 6.3)/10)\n"
   "\n"
   "  :\"m\" sodium activation system - act and inact cross at -40\n"
   "  :\"m\" is the activation gate for the sodium current. It is voltage-dependent.\n"
-  "  alpha = -0.3*vtrap((v+60-17),-5)\n"
-  "  beta = 0.3*vtrap((v+60-45),5)\n"
-  "  sum = alpha+beta        \n"
-  "  mtau = 1/sum\n"
-  "  minf = alpha/sum\n"
+  "  alpha = -0.3 * vtrap((v + 60 - 17), -5)\n"
+  "  beta = 0.3 * vtrap((v + 60 - 45), 5)\n"
+  "  sum = alpha + beta        \n"
+  "  mtau = 1 / sum\n"
+  "  minf = alpha / sum\n"
   "\n"
   "  :\"h\" sodium inactivation system\n"
   "  :\"h\" is the inactivation gate for the sodium current. It is also voltage-dependent.\n"
-  "  alpha = 0.23/exp((v+60+5)/20)\n"
-  "  beta = 3.33/(1+exp((v+60-47.5)/-10))\n"
-  "  sum = alpha+beta\n"
-  "  htau = 1/sum \n"
-  "  hinf = alpha/sum \n"
+  "  alpha = 0.23 / exp((v + 60 + 5) / 20)\n"
+  "  beta = 3.33 / (1 + exp((v + 60 - 47.5) / -10))\n"
+  "  sum = alpha + beta\n"
+  "  htau = 1 / sum \n"
+  "  hinf = alpha / sum \n"
   "\n"
   "  :\"ns\" sKDR activation system\n"
   "  :\"ns\" is the activation gate for the slow Potassium (K) Rectifier current. It is voltage-dependent.\n"
-  "  alpha = -0.028*vtrap((v+65-35),-6)\n"
-  "  beta = 0.1056/exp((v+65-10)/40)\n"
-  "  sum = alpha+beta        \n"
-  "  nstau = 1/sum\n"
-  "  nsinf = alpha/sum\n"
+  "  alpha = -0.028 * vtrap((v + 65 - 35), -6)\n"
+  "  beta = 0.1056 / exp((v + 65 - 10) / 40)\n"
+  "  sum = alpha + beta        \n"
+  "  nstau = 1 / sum\n"
+  "  nsinf = alpha / sum\n"
   "\n"
   "  :\"nf\" fKDR activation system\n"
   "  :\"nf\" is the activation gate for the fast Potassium (K) Rectifier current. It is voltage-dependent.\n"
-  "  alpha = -0.07*vtrap((v+65-47),-6)\n"
-  "  beta = 0.264/exp((v+65-22)/40)\n"
-  "  sum = alpha+beta        \n"
-  "  nftau = 1/sum\n"
-  "  nfinf = alpha/sum\n"
+  "  alpha = -0.07 * vtrap((v + 65 - 47), -6)\n"
+  "  beta = 0.264 / exp((v + 65 - 22) / 40)\n"
+  "  sum = alpha + beta        \n"
+  "  nftau = 1 / sum\n"
+  "  nfinf = alpha / sum\n"
   "}\n"
   "\n"
-  "FUNCTION vtrap(x,y) {\n"
-  "  if (fabs(x/y) < 1e-6) {\n"
-  "    vtrap = y*(1 - x/y/2)\n"
+  "FUNCTION vtrap(x, y) {\n"
+  "  if (fabs(x / y) < 1e-6) {\n"
+  "    vtrap = y * (1 - x / y / 2)\n"
   "  } else {\n"
-  "    vtrap = x/(exp(x/y) - 1)\n"
+  "    vtrap = x / (exp(x / y) - 1)\n"
   "  }\n"
   "}\n"
-  "\n"
-  "UNITSON\n"
   ;
 #endif

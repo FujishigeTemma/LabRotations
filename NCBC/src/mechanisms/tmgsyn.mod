@@ -73,7 +73,6 @@ weight and activation history.
 The printf() statements are for testing purposes only.
 ENDCOMMENT
 
-
 NEURON {
   POINT_PROCESS tmgsyn
   RANGE e, i
@@ -90,7 +89,7 @@ UNITS {
 PARAMETER {
   : e = -90 mV for inhibitory synapses,
   :     0 mV for excitatory
-  e = -90  (mV)
+  e = -90 (mV)
   : tau_1 was the same for inhibitory and excitatory synapses
   : in the models used by T et al.
   tau_1 = 3 (ms) < 1e-9, 1e9 >
@@ -120,42 +119,43 @@ STATE {
 }
 
 INITIAL {
-  g=0
+  g = 0
 }
 
 BREAKPOINT {
   SOLVE state METHOD cnexp
-  i = g*(v - e)
+
+  i = g * (v - e)
 }
 
 DERIVATIVE state {
-  g' = -g/tau_1
+  g' = -g / tau_1
 }
 
 NET_RECEIVE(weight (umho), y, z, u, tsyn (ms)) {
-INITIAL {
-: these are in NET_RECEIVE to be per-stream
-  y = 0
-  z = 0
-: u = 0
-  u = u0
-  tsyn = t
-: this header will appear once per stream
-: printf("t\t t-tsyn\t y\t z\t u\t newu\t g\t dg\t newg\t newy\n")
-}
+  INITIAL {
+  : these are in NET_RECEIVE to be per-stream
+    y = 0
+    z = 0
+  : u = 0
+    u = u0
+    tsyn = t
+  : this header will appear once per stream
+  : printf("t\t t-tsyn\t y\t z\t u\t newu\t g\t dg\t newg\t newy\n")
+  }
 
   : first calculate z at event-
-  :   based on prior y and z
-  z = z*exp(-(t - tsyn)/tau_recovery)
-  z = z + ( y*(exp(-(t - tsyn)/tau_1) - exp(-(t - tsyn)/tau_recovery)) / ((tau_1/tau_recovery)-1) )
+  : based on prior y and z
+  z = z * exp(-(t - tsyn) / tau_recovery)
+  z = z + (y * (exp(-(t - tsyn) / tau_1) - exp(-(t - tsyn) / tau_recovery)) / ((tau_1 / tau_recovery) - 1))
   : now calc y at event-
-  y = y*exp(-(t - tsyn)/tau_1)
+  y = y * exp(-(t - tsyn) / tau_1)
 
-  x = 1-y-z
+  x = 1 - y - z
 
   : calc u at event--
   if (tau_facilition > 0) {
-    u = u*exp(-(t - tsyn)/tau_facilition)
+    u = u * exp(-(t - tsyn) / tau_facilition)
   } else {
     u = U
   }
@@ -163,13 +163,13 @@ INITIAL {
 : printf("%g\t%g\t%g\t%g\t%g", t, t-tsyn, y, z, u)
 
   if (tau_facilition > 0) {
-    state_discontinuity(u, u + U*(1-u))
+    u = u + U * (1-u)
   }
 
 : printf("\t%g\t%g\t%g", u, g, weight*x*u)
 
-  state_discontinuity(g, g + weight*x*u)
-  state_discontinuity(y, y + x*u)
+  g = g + weight * x * u
+  y = y + x * u
 
   tsyn = t
 

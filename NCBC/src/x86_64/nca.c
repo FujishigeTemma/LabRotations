@@ -29,7 +29,7 @@ extern double hoc_Exp(double);
 #define nrn_jacob _nrn_jacob__nca
 #define nrn_state _nrn_state__nca
 #define _net_receive _net_receive__nca 
-#define calcRates calcRates__nca 
+#define rates rates__nca 
 #define states states__nca 
  
 #define _threadargscomma_ _p, _ppvar, _thread, _nt,
@@ -63,16 +63,16 @@ extern double hoc_Exp(double);
 #define c_columnindex 7
 #define d _p[8]
 #define d_columnindex 8
-#define Dc _p[9]
-#define Dc_columnindex 9
-#define Dd _p[10]
-#define Dd_columnindex 10
-#define enca _p[11]
-#define enca_columnindex 11
-#define cexp _p[12]
-#define cexp_columnindex 12
-#define dexp _p[13]
-#define dexp_columnindex 13
+#define enca _p[9]
+#define enca_columnindex 9
+#define cexp _p[10]
+#define cexp_columnindex 10
+#define dexp _p[11]
+#define dexp_columnindex 11
+#define Dc _p[12]
+#define Dc_columnindex 12
+#define Dd _p[13]
+#define Dd_columnindex 13
 #define v _p[14]
 #define v_columnindex 14
 #define _g _p[15]
@@ -99,7 +99,7 @@ extern "C" {
  /* external NEURON variables */
  extern double celsius;
  /* declaration of user functions */
- static void _hoc_calcRates(void);
+ static void _hoc_rates(void);
  static void _hoc_states(void);
  static void _hoc_vtrap(void);
  static int _mechtype;
@@ -131,7 +131,7 @@ extern void hoc_reg_nmodl_filename(int, const char*);
  /* connect user functions to hoc names */
  static VoidFunc hoc_intfunc[] = {
  "setdata_nca", _hoc_setdata,
- "calcRates_nca", _hoc_calcRates,
+ "rates_nca", _hoc_rates,
  "states_nca", _hoc_states,
  "vtrap_nca", _hoc_vtrap,
  0, 0
@@ -256,11 +256,11 @@ static int error;
 static int _ninits = 0;
 static int _match_recurse=1;
 static void _modl_cleanup(){ _match_recurse=1;}
-static int calcRates(_threadargsprotocomma_ double);
+static int rates(_threadargsprotocomma_ double);
 static int states(_threadargsproto_);
  
 static int  states ( _threadargsproto_ ) {
-   calcRates ( _threadargscomma_ v ) ;
+   rates ( _threadargscomma_ v ) ;
    c = c + ( cinf - c ) * ( 1.0 - exp ( - dt * _zq10 / ctau ) ) ;
    d = d + ( dinf - d ) * ( 1.0 - exp ( - dt * _zq10 / dtau ) ) ;
     return 0; }
@@ -276,7 +276,7 @@ static void _hoc_states(void) {
  hoc_retpushx(_r);
 }
  
-static int  calcRates ( _threadargsprotocomma_ double _lv ) {
+static int  rates ( _threadargsprotocomma_ double _lv ) {
    double _lalpha , _lbeta , _lsum ;
  _zq10 = pow( 3.0 , ( ( celsius - 6.3 ) / 10.0 ) ) ;
    _lalpha = - 0.19 * vtrap ( _threadargscomma_ _lv - 19.88 , - 10.0 ) ;
@@ -291,14 +291,14 @@ static int  calcRates ( _threadargsprotocomma_ double _lv ) {
    dinf = _lalpha / _lsum ;
     return 0; }
  
-static void _hoc_calcRates(void) {
+static void _hoc_rates(void) {
   double _r;
    double* _p; Datum* _ppvar; Datum* _thread; NrnThread* _nt;
    if (_extcall_prop) {_p = _extcall_prop->param; _ppvar = _extcall_prop->dparam;}else{ _p = (double*)0; _ppvar = (Datum*)0; }
   _thread = _extcall_thread;
   _nt = nrn_threads;
  _r = 1.;
- calcRates ( _p, _ppvar, _thread, _nt, *getarg(1) );
+ rates ( _p, _ppvar, _thread, _nt, *getarg(1) );
  hoc_retpushx(_r);
 }
  
@@ -345,7 +345,7 @@ static void initmodel(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt)
   c = c0;
   d = d0;
  {
-   calcRates ( _threadargscomma_ v ) ;
+   rates ( _threadargscomma_ v ) ;
    c = cinf ;
    d = dinf ;
    }
@@ -502,6 +502,12 @@ static const char* nmodl_file_text =
   "the effect of conductivity change in soma\n"
   "ENDCOMMENT\n"
   "\n"
+  "NEURON { \n"
+  "  SUFFIX nca\n"
+  "  USEION nca READ enca WRITE inca VALENCE 2 \n"
+  "  RANGE gnca, gncabar, cinf, ctau, dinf, dtau, inca\n"
+  "}\n"
+  "\n"
   "UNITS {\n"
   "  (mA) =(milliamp)\n"
   "  (mV) =(millivolt)\n"
@@ -510,27 +516,22 @@ static const char* nmodl_file_text =
   "  (nA) = (nanoamp)\n"
   "  (mM) = (millimolar)\n"
   "  (um) = (micron)\n"
+  "}\n"
+  "\n"
+  "UNITS {\n"
   "  FARADAY = 96520 (coul)\n"
   "  R = 8.3134  (joule/degC)\n"
   "}\n"
   "\n"
-  "NEURON { \n"
-  "  SUFFIX nca\n"
-  "  USEION nca READ enca WRITE inca VALENCE 2 \n"
-  "  RANGE gnca, gncabar, cinf, ctau, dinf, dtau, inca\n"
+  "INDEPENDENT {\n"
+  "  t FROM 0 TO 100 WITH 100 (ms)\n"
   "}\n"
-  "\n"
-  "INDEPENDENT {t FROM 0 TO 100 WITH 100 (ms)}\n"
   "\n"
   "PARAMETER {\n"
+  "  celsius\n"
   "  v (mV) \n"
-  "  celsius = 6.3 (degC)\n"
   "  dt (ms) \n"
   "  gncabar (mho/cm2)\n"
-  "}\n"
-  "\n"
-  "STATE {\n"
-  "  c d\n"
   "}\n"
   "\n"
   "ASSIGNED {\n"
@@ -542,7 +543,13 @@ static const char* nmodl_file_text =
   "  dtau (ms) \n"
   "  cexp\n"
   "  dexp      \n"
-  "} \n"
+  "}\n"
+  "\n"
+  "STATE {\n"
+  "  c\n"
+  "  d\n"
+  "}\n"
+  "\n"
   "\n"
   "BREAKPOINT {\n"
   "  SOLVE states\n"
@@ -550,10 +557,9 @@ static const char* nmodl_file_text =
   "  inca = gnca * (v - enca)\n"
   "}\n"
   "\n"
-  "UNITSOFF\n"
-  "\n"
   "INITIAL {\n"
-  "  calcRates(v)\n"
+  "  rates(v)\n"
+  "\n"
   "  c = cinf\n"
   "  d = dinf\n"
   "}\n"
@@ -561,13 +567,13 @@ static const char* nmodl_file_text =
   "LOCAL q10\n"
   "\n"
   "PROCEDURE states() {\n"
-  "  calcRates(v)\n"
+  "  rates(v)\n"
   "\n"
   "  c = c + (cinf-c) * (1 - exp(-dt*q10/ctau))\n"
   "  d = d + (dinf-d) * (1 - exp(-dt*q10/dtau))\n"
   "}\n"
   "\n"
-  "PROCEDURE calcRates(v) {\n"
+  "PROCEDURE rates(v) {\n"
   "  LOCAL alpha, beta, sum\n"
   "  q10 = 3^((celsius - 6.3)/10)\n"
   "\n"
@@ -593,8 +599,5 @@ static const char* nmodl_file_text =
   "    vtrap = x / (exp(x / y) - 1)\n"
   "  }\n"
   "}\n"
-  "\n"
-  "UNITSON\n"
-  "\n"
   ;
 #endif

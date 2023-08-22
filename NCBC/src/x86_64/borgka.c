@@ -1,6 +1,6 @@
 /* Created by Language version: 7.7.0 */
-/* NOT VECTORIZED */
-#define NRN_VECTORIZED 0
+/* VECTORIZED */
+#define NRN_VECTORIZED 1
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -32,19 +32,19 @@ extern double hoc_Exp(double);
 #define rates rates__borgka 
 #define states states__borgka 
  
-#define _threadargscomma_ /**/
-#define _threadargsprotocomma_ /**/
-#define _threadargs_ /**/
-#define _threadargsproto_ /**/
+#define _threadargscomma_ _p, _ppvar, _thread, _nt,
+#define _threadargsprotocomma_ double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt,
+#define _threadargs_ _p, _ppvar, _thread, _nt
+#define _threadargsproto_ double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt
  	/*SUPPRESS 761*/
 	/*SUPPRESS 762*/
 	/*SUPPRESS 763*/
 	/*SUPPRESS 765*/
 	 extern double *getarg();
- static double *_p; static Datum *_ppvar;
+ /* Thread safe. No static _p or _ppvar. */
  
-#define t nrn_threads->_t
-#define dt nrn_threads->_dt
+#define t _nt->_t
+#define dt _nt->_dt
 #define gkabar _p[0]
 #define gkabar_columnindex 0
 #define ik _p[1]
@@ -57,12 +57,22 @@ extern double hoc_Exp(double);
 #define l_columnindex 4
 #define ek _p[5]
 #define ek_columnindex 5
-#define Dn _p[6]
-#define Dn_columnindex 6
-#define Dl _p[7]
-#define Dl_columnindex 7
-#define _g _p[8]
-#define _g_columnindex 8
+#define ninf _p[6]
+#define ninf_columnindex 6
+#define linf _p[7]
+#define linf_columnindex 7
+#define ntau _p[8]
+#define ntau_columnindex 8
+#define ltau _p[9]
+#define ltau_columnindex 9
+#define Dn _p[10]
+#define Dn_columnindex 10
+#define Dl _p[11]
+#define Dl_columnindex 11
+#define v _p[12]
+#define v_columnindex 12
+#define _g _p[13]
+#define _g_columnindex 13
 #define _ion_ek	*_ppvar[0]._pval
 #define _ion_ik	*_ppvar[1]._pval
 #define _ion_dikdv	*_ppvar[2]._pval
@@ -80,11 +90,12 @@ extern double hoc_Exp(double);
 extern "C" {
 #endif
  static int hoc_nrnpointerindex =  -1;
+ static Datum* _extcall_thread;
+ static Prop* _extcall_prop;
  /* external NEURON variables */
  extern double celsius;
  /* declaration of user functions */
- static void _hoc_rateL(void);
- static void _hoc_rateN(void);
+ static void _hoc_alpha(void);
  static void _hoc_rates(void);
  static int _mechtype;
 extern void _nrn_cacheloop_reg(int, int);
@@ -104,7 +115,7 @@ extern void hoc_reg_nmodl_filename(int, const char*);
 
  extern void _nrn_setdata_reg(int, void(*)(Prop*));
  static void _setdata(Prop* _prop) {
- _p = _prop->param; _ppvar = _prop->dparam;
+ _extcall_prop = _prop;
  }
  static void _hoc_setdata() {
  Prop *_prop, *hoc_getdata_range(int);
@@ -115,32 +126,21 @@ extern void hoc_reg_nmodl_filename(int, const char*);
  /* connect user functions to hoc names */
  static VoidFunc hoc_intfunc[] = {
  "setdata_borgka", _hoc_setdata,
- "rateL_borgka", _hoc_rateL,
- "rateN_borgka", _hoc_rateN,
+ "alpha_borgka", _hoc_alpha,
  "rates_borgka", _hoc_rates,
  0, 0
 };
-#define rateL rateL_borgka
-#define rateN rateN_borgka
- extern double rateL( double );
- extern double rateN( double );
+#define alpha alpha_borgka
+ extern double alpha( _threadargsprotocomma_ double , double , double );
  /* declare global and static user variables */
-#define a0n a0n_borgka
- double a0n = 0.02;
 #define a0l a0l_borgka
  double a0l = 0.08;
+#define a0n a0n_borgka
+ double a0n = 0.02;
 #define gml gml_borgka
  double gml = 1;
 #define gmn gmn_borgka
  double gmn = 0.6;
-#define linf linf_borgka
- double linf = 0;
-#define ninf ninf_borgka
- double ninf = 0;
-#define taun taun_borgka
- double taun = 0;
-#define taul taul_borgka
- double taul = 0;
 #define vhalfl vhalfl_borgka
  double vhalfl = -83;
 #define vhalfn vhalfn_borgka
@@ -156,8 +156,8 @@ extern void hoc_reg_nmodl_filename(int, const char*);
  static HocParmUnits _hoc_parm_units[] = {
  "vhalfn_borgka", "mV",
  "vhalfl_borgka", "mV",
- "a0l_borgka", "/ms",
  "a0n_borgka", "/ms",
+ "a0l_borgka", "/ms",
  "zetan_borgka", "1",
  "zetal_borgka", "1",
  "gmn_borgka", "1",
@@ -169,21 +169,16 @@ extern void hoc_reg_nmodl_filename(int, const char*);
  static double delta_t = 0.01;
  static double l0 = 0;
  static double n0 = 0;
- static double v = 0;
  /* connect global user variables to hoc */
  static DoubScal hoc_scdoub[] = {
  "vhalfn_borgka", &vhalfn_borgka,
  "vhalfl_borgka", &vhalfl_borgka,
- "a0l_borgka", &a0l_borgka,
  "a0n_borgka", &a0n_borgka,
+ "a0l_borgka", &a0l_borgka,
  "zetan_borgka", &zetan_borgka,
  "zetal_borgka", &zetal_borgka,
  "gmn_borgka", &gmn_borgka,
  "gml_borgka", &gml_borgka,
- "taul_borgka", &taul_borgka,
- "taun_borgka", &taun_borgka,
- "ninf_borgka", &ninf_borgka,
- "linf_borgka", &linf_borgka,
  0,0
 };
  static DoubVec hoc_vdoub[] = {
@@ -223,11 +218,11 @@ extern Prop* need_memb(Symbol*);
 static void nrn_alloc(Prop* _prop) {
 	Prop *prop_ion;
 	double *_p; Datum *_ppvar;
- 	_p = nrn_prop_data_alloc(_mechtype, 9, _prop);
+ 	_p = nrn_prop_data_alloc(_mechtype, 14, _prop);
  	/*initialize range parameters*/
  	gkabar = 0.01;
  	_prop->param = _p;
- 	_prop->param_size = 9;
+ 	_prop->param_size = 14;
  	_ppvar = nrn_prop_datum_alloc(_mechtype, 4, _prop);
  	_prop->dparam = _ppvar;
  	/*connect ionic variables to this model*/
@@ -252,11 +247,11 @@ extern void hoc_register_tolerance(int, HocStateTolerance*, Symbol***);
 extern void _cvode_abstol( Symbol**, double*, int);
 
  void _borgka_reg() {
-	int _vectorized = 0;
+	int _vectorized = 1;
   _initlists();
  	ion_reg("k", -10000.);
  	_k_sym = hoc_lookup("k_ion");
- 	register_mech(_mechanism, nrn_alloc,nrn_cur, nrn_jacob, nrn_state, nrn_init, hoc_nrnpointerindex, 0);
+ 	register_mech(_mechanism, nrn_alloc,nrn_cur, nrn_jacob, nrn_state, nrn_init, hoc_nrnpointerindex, 1);
  _mechtype = nrn_get_mechtype(_mechanism[1]);
      _nrn_setdata_reg(_mechtype, _setdata);
      _nrn_thread_reg(_mechtype, 2, _update_ion_pointer);
@@ -264,7 +259,7 @@ extern void _cvode_abstol( Symbol**, double*, int);
   hoc_reg_nmodl_text(_mechtype, nmodl_file_text);
   hoc_reg_nmodl_filename(_mechtype, nmodl_filename);
 #endif
-  hoc_register_prop_size(_mechtype, 9, 4);
+  hoc_register_prop_size(_mechtype, 14, 4);
   hoc_register_dparam_semantics(_mechtype, 0, "k_ion");
   hoc_register_dparam_semantics(_mechtype, 1, "k_ion");
   hoc_register_dparam_semantics(_mechtype, 2, "k_ion");
@@ -283,86 +278,79 @@ static int error;
 static int _ninits = 0;
 static int _match_recurse=1;
 static void _modl_cleanup(){ _match_recurse=1;}
-static int rates(double);
+static int rates(_threadargsprotocomma_ double);
  
 static int _ode_spec1(_threadargsproto_);
 /*static int _ode_matsol1(_threadargsproto_);*/
  static int _slist1[2], _dlist1[2];
  static int states(_threadargsproto_);
  
-double rateN (  double _lv ) {
-   double _lrateN;
- _lrateN = exp ( 1e-3 * zetan * ( _lv - vhalfn ) * 9.648e4 / ( 8.315 * ( 273.16 + celsius ) ) ) ;
-   
-return _lrateN;
- }
- 
-static void _hoc_rateN(void) {
-  double _r;
-   _r =  rateN (  *getarg(1) );
- hoc_retpushx(_r);
-}
- 
-double rateL (  double _lv ) {
-   double _lrateL;
- _lrateL = exp ( 1e-3 * zetal * ( _lv - vhalfl ) * 9.648e4 / ( 8.315 * ( 273.16 + celsius ) ) ) ;
-   
-return _lrateL;
- }
- 
-static void _hoc_rateL(void) {
-  double _r;
-   _r =  rateL (  *getarg(1) );
- hoc_retpushx(_r);
-}
- 
 /*CVODE*/
- static int _ode_spec1 () {_reset=0;
- {
+ static int _ode_spec1 (double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt) {int _reset = 0; {
    rates ( _threadargscomma_ v ) ;
-   Dn = ( ninf - n ) / taun ;
-   Dl = ( linf - l ) / taul ;
+   Dn = ( ninf - n ) / ntau ;
+   Dl = ( linf - l ) / ltau ;
    }
  return _reset;
 }
- static int _ode_matsol1 () {
+ static int _ode_matsol1 (double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt) {
  rates ( _threadargscomma_ v ) ;
- Dn = Dn  / (1. - dt*( ( ( ( - 1.0 ) ) ) / taun )) ;
- Dl = Dl  / (1. - dt*( ( ( ( - 1.0 ) ) ) / taul )) ;
+ Dn = Dn  / (1. - dt*( ( ( ( - 1.0 ) ) ) / ntau )) ;
+ Dl = Dl  / (1. - dt*( ( ( ( - 1.0 ) ) ) / ltau )) ;
   return 0;
 }
  /*END CVODE*/
- static int states () {_reset=0;
- {
+ static int states (double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt) { {
    rates ( _threadargscomma_ v ) ;
-    n = n + (1. - exp(dt*(( ( ( - 1.0 ) ) ) / taun)))*(- ( ( ( ninf ) ) / taun ) / ( ( ( ( - 1.0 ) ) ) / taun ) - n) ;
-    l = l + (1. - exp(dt*(( ( ( - 1.0 ) ) ) / taul)))*(- ( ( ( linf ) ) / taul ) / ( ( ( ( - 1.0 ) ) ) / taul ) - l) ;
+    n = n + (1. - exp(dt*(( ( ( - 1.0 ) ) ) / ntau)))*(- ( ( ( ninf ) ) / ntau ) / ( ( ( ( - 1.0 ) ) ) / ntau ) - n) ;
+    l = l + (1. - exp(dt*(( ( ( - 1.0 ) ) ) / ltau)))*(- ( ( ( linf ) ) / ltau ) / ( ( ( ( - 1.0 ) ) ) / ltau ) - l) ;
    }
   return 0;
 }
  
-static int  rates (  double _lv ) {
-   double _lalpha , _lq10 ;
+double alpha ( _threadargsprotocomma_ double _lv , double _lvhalf , double _lzeta ) {
+   double _lalpha;
+ _lalpha = exp ( 1e-3 * _lzeta * ( _lv - _lvhalf ) * 9.648e4 / ( 8.315 * ( 273.16 + celsius ) ) ) ;
+   
+return _lalpha;
+ }
+ 
+static void _hoc_alpha(void) {
+  double _r;
+   double* _p; Datum* _ppvar; Datum* _thread; NrnThread* _nt;
+   if (_extcall_prop) {_p = _extcall_prop->param; _ppvar = _extcall_prop->dparam;}else{ _p = (double*)0; _ppvar = (Datum*)0; }
+  _thread = _extcall_thread;
+  _nt = nrn_threads;
+ _r =  alpha ( _p, _ppvar, _thread, _nt, *getarg(1) , *getarg(2) , *getarg(3) );
+ hoc_retpushx(_r);
+}
+ 
+static int  rates ( _threadargsprotocomma_ double _lv ) {
+   double _la , _lq10 ;
  _lq10 = pow( 3.0 , ( ( celsius - 30.0 ) / 10.0 ) ) ;
-   _lalpha = rateN ( _threadargscomma_ _lv ) ;
-   ninf = 1.0 / ( 1.0 + _lalpha ) ;
-   taun = 1.0 / ( _lq10 * a0n * ( 1.0 + _lalpha ) ) ;
-   _lalpha = rateL ( _threadargscomma_ _lv ) ;
-   linf = 1.0 / ( 1.0 + _lalpha ) ;
-   taul = 1.0 / ( _lq10 * a0l * ( 1.0 + _lalpha ) ) ;
+   _la = alpha ( _threadargscomma_ _lv , vhalfn , zetan ) ;
+   ninf = 1.0 / ( 1.0 + _la ) ;
+   ntau = 1.0 / ( _lq10 * a0n * ( 1.0 + _la ) ) ;
+   _la = alpha ( _threadargscomma_ _lv , vhalfl , zetal ) ;
+   linf = 1.0 / ( 1.0 + _la ) ;
+   ltau = 1.0 / ( _lq10 * a0l * ( 1.0 + _la ) ) ;
     return 0; }
  
 static void _hoc_rates(void) {
   double _r;
-   _r = 1.;
- rates (  *getarg(1) );
+   double* _p; Datum* _ppvar; Datum* _thread; NrnThread* _nt;
+   if (_extcall_prop) {_p = _extcall_prop->param; _ppvar = _extcall_prop->dparam;}else{ _p = (double*)0; _ppvar = (Datum*)0; }
+  _thread = _extcall_thread;
+  _nt = nrn_threads;
+ _r = 1.;
+ rates ( _p, _ppvar, _thread, _nt, *getarg(1) );
  hoc_retpushx(_r);
 }
  
 static int _ode_count(int _type){ return 2;}
  
 static void _ode_spec(NrnThread* _nt, _Memb_list* _ml, int _type) {
-   Datum* _thread;
+   double* _p; Datum* _ppvar; Datum* _thread;
    Node* _nd; double _v; int _iml, _cntml;
   _cntml = _ml->_nodecount;
   _thread = _ml->_thread;
@@ -371,10 +359,11 @@ static void _ode_spec(NrnThread* _nt, _Memb_list* _ml, int _type) {
     _nd = _ml->_nodelist[_iml];
     v = NODEV(_nd);
   ek = _ion_ek;
-     _ode_spec1 ();
+     _ode_spec1 (_p, _ppvar, _thread, _nt);
   }}
  
 static void _ode_map(int _ieq, double** _pv, double** _pvdot, double* _pp, Datum* _ppd, double* _atol, int _type) { 
+	double* _p; Datum* _ppvar;
  	int _i; _p = _pp; _ppvar = _ppd;
 	_cvode_ieq = _ieq;
 	for (_i=0; _i < 2; ++_i) {
@@ -384,11 +373,11 @@ static void _ode_map(int _ieq, double** _pv, double** _pvdot, double* _pp, Datum
  }
  
 static void _ode_matsol_instance1(_threadargsproto_) {
- _ode_matsol1 ();
+ _ode_matsol1 (_p, _ppvar, _thread, _nt);
  }
  
 static void _ode_matsol(NrnThread* _nt, _Memb_list* _ml, int _type) {
-   Datum* _thread;
+   double* _p; Datum* _ppvar; Datum* _thread;
    Node* _nd; double _v; int _iml, _cntml;
   _cntml = _ml->_nodecount;
   _thread = _ml->_thread;
@@ -406,11 +395,8 @@ static void _ode_matsol(NrnThread* _nt, _Memb_list* _ml, int _type) {
    nrn_update_ion_pointer(_k_sym, _ppvar, 2, 4);
  }
 
-static void initmodel() {
-  int _i; double _save;_ninits++;
- _save = t;
- t = 0.0;
-{
+static void initmodel(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt) {
+  int _i; double _save;{
   l = l0;
   n = n0;
  {
@@ -418,17 +404,18 @@ static void initmodel() {
    n = ninf ;
    l = linf ;
    }
-  _sav_indep = t; t = _save;
-
+ 
 }
 }
 
 static void nrn_init(NrnThread* _nt, _Memb_list* _ml, int _type){
+double* _p; Datum* _ppvar; Datum* _thread;
 Node *_nd; double _v; int* _ni; int _iml, _cntml;
 #if CACHEVEC
     _ni = _ml->_nodeindices;
 #endif
 _cntml = _ml->_nodecount;
+_thread = _ml->_thread;
 for (_iml = 0; _iml < _cntml; ++_iml) {
  _p = _ml->_data[_iml]; _ppvar = _ml->_pdata[_iml];
 #if CACHEVEC
@@ -442,10 +429,11 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
   }
  v = _v;
   ek = _ion_ek;
- initmodel();
- }}
+ initmodel(_p, _ppvar, _thread, _nt);
+ }
+}
 
-static double _nrn_current(double _v){double _current=0.;v=_v;{ {
+static double _nrn_current(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt, double _v){double _current=0.;v=_v;{ {
    gka = gkabar * n * l ;
    ik = gka * ( v - ek ) ;
    }
@@ -454,12 +442,14 @@ static double _nrn_current(double _v){double _current=0.;v=_v;{ {
 } return _current;
 }
 
-static void nrn_cur(NrnThread* _nt, _Memb_list* _ml, int _type){
+static void nrn_cur(NrnThread* _nt, _Memb_list* _ml, int _type) {
+double* _p; Datum* _ppvar; Datum* _thread;
 Node *_nd; int* _ni; double _rhs, _v; int _iml, _cntml;
 #if CACHEVEC
     _ni = _ml->_nodeindices;
 #endif
 _cntml = _ml->_nodecount;
+_thread = _ml->_thread;
 for (_iml = 0; _iml < _cntml; ++_iml) {
  _p = _ml->_data[_iml]; _ppvar = _ml->_pdata[_iml];
 #if CACHEVEC
@@ -472,10 +462,10 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
     _v = NODEV(_nd);
   }
   ek = _ion_ek;
- _g = _nrn_current(_v + .001);
+ _g = _nrn_current(_p, _ppvar, _thread, _nt, _v + .001);
  	{ double _dik;
   _dik = ik;
- _rhs = _nrn_current(_v);
+ _rhs = _nrn_current(_p, _ppvar, _thread, _nt, _v);
   _ion_dikdv += (_dik - ik)/.001 ;
  	}
  _g = (_g - _rhs)/.001;
@@ -489,14 +479,18 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
 	NODERHS(_nd) -= _rhs;
   }
  
-}}
+}
+ 
+}
 
-static void nrn_jacob(NrnThread* _nt, _Memb_list* _ml, int _type){
+static void nrn_jacob(NrnThread* _nt, _Memb_list* _ml, int _type) {
+double* _p; Datum* _ppvar; Datum* _thread;
 Node *_nd; int* _ni; int _iml, _cntml;
 #if CACHEVEC
     _ni = _ml->_nodeindices;
 #endif
 _cntml = _ml->_nodecount;
+_thread = _ml->_thread;
 for (_iml = 0; _iml < _cntml; ++_iml) {
  _p = _ml->_data[_iml];
 #if CACHEVEC
@@ -509,14 +503,18 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
 	NODED(_nd) += _g;
   }
  
-}}
+}
+ 
+}
 
-static void nrn_state(NrnThread* _nt, _Memb_list* _ml, int _type){
+static void nrn_state(NrnThread* _nt, _Memb_list* _ml, int _type) {
+double* _p; Datum* _ppvar; Datum* _thread;
 Node *_nd; double _v = 0.0; int* _ni; int _iml, _cntml;
 #if CACHEVEC
     _ni = _ml->_nodeindices;
 #endif
 _cntml = _ml->_nodecount;
+_thread = _ml->_thread;
 for (_iml = 0; _iml < _cntml; ++_iml) {
  _p = _ml->_data[_iml]; _ppvar = _ml->_pdata[_iml];
  _nd = _ml->_nodelist[_iml];
@@ -532,15 +530,15 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
  v=_v;
 {
   ek = _ion_ek;
- { error =  states();
- if(error){fprintf(stderr,"at line 51 in file borgka.mod:\n  SOLVE states METHOD cnexp\n"); nrn_complain(_p); abort_run(error);}
- } }}
+ {   states(_p, _ppvar, _thread, _nt);
+  } }}
 
 }
 
 static void terminal(){}
 
-static void _initlists() {
+static void _initlists(){
+ double _x; double* _p = &_x;
  int _i; static int _first = 1;
   if (!_first) return;
  _slist1[0] = n_columnindex;  _dlist1[0] = Dn_columnindex;
@@ -548,10 +546,20 @@ static void _initlists() {
 _first = 0;
 }
 
+#if defined(__cplusplus)
+} /* extern "C" */
+#endif
+
 #if NMODL_TEXT
 static const char* nmodl_filename = "/Users/temma/ghq/LabRotations/NCBC/src/mechanisms/borgka.mod";
 static const char* nmodl_file_text = 
   "TITLE Borg-Graham type generic K-A channel\n"
+  "\n"
+  "NEURON {\n"
+  "  SUFFIX borgka\n"
+  "  USEION k READ ek WRITE ik\n"
+  "  RANGE gkabar, gka, ik\n"
+  "}\n"
   "\n"
   "UNITS {\n"
   "  (mA) = (milliamp)\n"
@@ -559,25 +567,27 @@ static const char* nmodl_file_text =
   "}\n"
   "\n"
   "PARAMETER {\n"
+  "  celsius (degC)\n"
   "  v (mV)\n"
   "  ek (mV)\n"
-  "  celsius (degC)\n"
-  "  gkabar=.01 (mho/cm2)\n"
-  "  vhalfn=-33.6 (mV)\n"
-  "  vhalfl=-83 (mV)\n"
-  "  a0l=0.08 (/ms)\n"
-  "  a0n=0.02 (/ms)\n"
-  "  zetan=-3 (1)\n"
-  "  zetal=4 (1)\n"
-  "  gmn=0.6 (1)\n"
-  "  gml=1 (1)\n"
+  "  gkabar = .01 (mho/cm2)\n"
+  "  vhalfn = -33.6 (mV)\n"
+  "  vhalfl = -83 (mV)\n"
+  "  a0n = 0.02 (/ms)\n"
+  "  a0l = 0.08 (/ms)\n"
+  "  zetan = -3 (1)\n"
+  "  zetal = 4 (1)\n"
+  "  gmn = 0.6 (1)\n"
+  "  gml = 1 (1)\n"
   "}\n"
   "\n"
-  "NEURON {\n"
-  "  SUFFIX borgka\n"
-  "  USEION k READ ek WRITE ik\n"
-  "  RANGE gkabar,gka, ik\n"
-  "  GLOBAL ninf, linf, taul, taun\n"
+  "ASSIGNED {\n"
+  "  ik (mA/cm2)\n"
+  "  gka\n"
+  "  ninf\n"
+  "  linf\n"
+  "  ntau (ms)\n"
+  "  ltau (ms)\n"
   "}\n"
   "\n"
   "STATE {\n"
@@ -587,48 +597,39 @@ static const char* nmodl_file_text =
   "\n"
   "INITIAL {\n"
   "  rates(v)\n"
+  "\n"
   "  n = ninf\n"
   "  l = linf\n"
   "}\n"
   "\n"
-  "ASSIGNED {\n"
-  "  ik (mA/cm2)\n"
-  "  gka\n"
-  "  taul\n"
-  "  taun\n"
-  "  ninf\n"
-  "  linf      \n"
-  "}\n"
-  "\n"
   "BREAKPOINT {\n"
   "  SOLVE states METHOD cnexp\n"
-  "  gka = gkabar*n*l\n"
-  "  ik = gka*(v-ek)\n"
+  "  gka = gkabar * n * l\n"
+  "  ik = gka * (v - ek)\n"
   "}\n"
   "\n"
-  "FUNCTION rateN(v(mV)) {\n"
-  "  rateN = exp(1e-3 * zetan * (v - vhalfn) * 9.648e4 / (8.315 * (273.16 + celsius))) \n"
-  "}\n"
-  "\n"
-  "FUNCTION rateL(v(mV)) {\n"
-  "  rateL = exp(1e-3 * zetal * (v - vhalfl) * 9.648e4 / (8.315 * (273.16 + celsius))) \n"
-  "}\n"
-  "\n"
-  "DERIVATIVE states { \n"
+  "DERIVATIVE states {\n"
   "  rates(v)\n"
-  "  n' = (ninf - n) / taun\n"
-  "  l' = (linf - l) / taul\n"
+  "\n"
+  "  n' = (ninf - n) / ntau\n"
+  "  l' = (linf - l) / ltau\n"
+  "}\n"
+  "\n"
+  "FUNCTION alpha(v (mV), vhalf (mV), zeta (1)) {\n"
+  "  alpha = exp(1e-3 * zeta * (v - vhalf) * 9.648e4 / (8.315 * (273.16 + celsius)))\n"
   "}\n"
   "\n"
   "PROCEDURE rates(v (mV)) {\n"
-  "  LOCAL alpha, q10\n"
+  "  LOCAL a, q10\n"
   "  q10 = 3 ^ ((celsius - 30) / 10)\n"
-  "  alpha = rateN(v)\n"
-  "  ninf = 1 / (1 + alpha)\n"
-  "  taun = 1 / (q10 * a0n * (1 + alpha))\n"
-  "  alpha = rateL(v)\n"
-  "  linf = 1 / (1 + alpha)\n"
-  "  taul = 1 / (q10 * a0l * (1 + alpha))\n"
+  "\n"
+  "  a = alpha(v, vhalfn, zetan)\n"
+  "  ninf = 1 / (1 + a)\n"
+  "  ntau = 1 / (q10 * a0n * (1 + a))\n"
+  "\n"
+  "  a = alpha(v, vhalfl, zetal)\n"
+  "  linf = 1 / (1 + a)\n"
+  "  ltau = 1 / (q10 * a0l * (1 + a))\n"
   "}\n"
   ;
 #endif

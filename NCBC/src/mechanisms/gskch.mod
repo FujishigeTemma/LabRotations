@@ -20,10 +20,12 @@ NEURON {
   RANGE gsk, gskbar, qinf, qtau, isk
 }
 
-INDEPENDENT {t FROM 0 TO 1 WITH 1 (ms)}
+INDEPENDENT {
+  t FROM 0 TO 1 WITH 1 (ms)
+}
 
 PARAMETER {
-  celsius=6.3 (degC)
+  celsius (degC)
   v (mV)
   dt (ms)
   gskbar (mho/cm2)
@@ -39,9 +41,11 @@ STATE {
 }
 
 ASSIGNED {
-  isk (mA/cm2) gsk (mho/cm2) qinf qtau (ms)
+  isk (mA/cm2)
+  gsk (mho/cm2)
+  qinf
+  qtau (ms)
 }
-
 
 BREAKPOINT {
   SOLVE state
@@ -49,11 +53,9 @@ BREAKPOINT {
   isk = gsk * (v-esk)
 }
 
-UNITSOFF
-
 INITIAL {
   cai = ncai + lcai + tcai  
-  calcRate(cai)
+  rates(cai)
   q = qinf
 }
 
@@ -61,11 +63,12 @@ LOCAL q10
 
 PROCEDURE state() {
   cai = ncai + lcai + tcai
-  calcRate(cai)
-  q = q + (qinf - q) * (1 - exp(-dt*q10/qtau) * q10)
+  rates(cai)
+
+  q = q + (qinf - q) * (1 - exp(-dt * q10 / qtau) * q10)
 }
 
-PROCEDURE calcRate(cai) {
+PROCEDURE rates(cai) {
   LOCAL alpha, beta
   q10 = 3^((celsius - 6.3)/10)
   
@@ -75,5 +78,3 @@ PROCEDURE calcRate(cai) {
   qtau = 1 / (alpha + beta)
   qinf = alpha * qtau
 }
-
-UNITSON

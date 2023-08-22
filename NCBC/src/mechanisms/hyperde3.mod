@@ -8,6 +8,18 @@ inhibition to hyperexcitability. Nature Medicine, 7(3) pp. 331-337, 2001.
 distal dendritic Ih channel kinetics for both HT and Control anlimals
 ENDCOMMENT
 
+NEURON {
+  SUFFIX hyperde3
+  USEION hyf READ ehyf WRITE ihyf VALENCE 1
+  USEION hys READ ehys WRITE ihys VALENCE 1
+  USEION hyhtf READ ehyhtf WRITE ihyhtf VALENCE 1
+  USEION hyhts READ ehyhts WRITE ihyhts VALENCE 1
+  RANGE ghyf, ghys, ghyhtf, ghyhts
+  RANGE ghyfbar, ghysbar, ghyhtfbar, ghyhtsbar
+  RANGE hyfinf, hysinf, hyftau, hystau
+  RANGE hyhtfinf, hyhtsinf, hyhtftau, hyhtstau, ihyf, ihys
+}
+
 UNITS {
   (mA) =(milliamp)
   (mV) =(millivolt)
@@ -16,27 +28,20 @@ UNITS {
   (nA) = (nanoamp)
   (mM) = (millimolar)
   (um) = (micron)
+}
+
+UNITS {
   FARADAY = 96520 (coul)
   R = 8.3134 (joule/degC)
 }
 
-NEURON {
-  SUFFIX hyperde3
-  USEION hyf READ ehyf WRITE ihyf VALENCE 1
-  USEION hys READ ehys WRITE ihys VALENCE 1
-  USEION hyhtf READ ehyhtf WRITE ihyhtf VALENCE 1
-  USEION hyhts READ ehyhts WRITE ihyhts VALENCE 1
-  RANGE  ghyf, ghys, ghyhtf, ghyhts
-  RANGE ghyfbar, ghysbar, ghyhtfbar, ghyhtsbar
-  RANGE hyfinf, hysinf, hyftau, hystau
-  RANGE hyhtfinf, hyhtsinf, hyhtftau, hyhtstau, ihyf, ihys
+INDEPENDENT {
+  t FROM 0 TO 100 WITH 100 (ms)
 }
-
-INDEPENDENT {t FROM 0 TO 100 WITH 100 (ms)}
 
 PARAMETER {
   v (mV)
-  celsius = 6.3 (degC)
+  celsius (degC)
   dt (ms) 
 
   ghyfbar (mho/cm2)
@@ -47,10 +52,6 @@ PARAMETER {
   ghyhtsbar (mho/cm2)
   ehyhtf (mV)
   ehyhts (mV)
-}
-
-STATE {
-  hyf hys hyhtf hyhts
 }
 
 ASSIGNED {
@@ -75,6 +76,13 @@ ASSIGNED {
   hyhtstau (ms)
 } 
 
+STATE {
+  hyf
+  hys
+  hyhtf
+  hyhts
+}
+
 BREAKPOINT {
   SOLVE states
 
@@ -83,16 +91,14 @@ BREAKPOINT {
   ghys = ghysbar * hys*hys
   ihys = ghys * (v-ehys)
 
-  ghyhtf = ghyhtfbar * hyhtf* hyhtf
-  ihyhtf = ghyhtf * (v-ehyhtf)
-  ghyhts = ghyhtsbar * hyhts* hyhts
-  ihyhts = ghyhts * (v-ehyhts)
+  ghyhtf = ghyhtfbar * hyhtf * hyhtf
+  ihyhtf = ghyhtf * (v - ehyhtf)
+  ghyhts = ghyhtsbar * hyhts * hyhts
+  ihyhts = ghyhts * (v - ehyhts)
 }
 
-UNITSOFF
-
 INITIAL {
-  calcRates(v)
+  rates(v)
   
   hyf = hyfinf
   hys = hysinf
@@ -103,7 +109,7 @@ INITIAL {
 LOCAL q10
 
 PROCEDURE states() {
-  calcRates(v)
+  rates(v)
 
   hyf = hyf + (hyfinf - hyf) * (1 - exp(-dt * q10 / hyftau))
   hys = hys + (hysinf - hys) * (1 - exp(-dt * q10 / hystau))
@@ -111,7 +117,7 @@ PROCEDURE states() {
   hyhts = hyhts + (hyhtsinf - hyhts) * (1 - exp(-dt * q10 / hyhtstau))
 }
 
-PROCEDURE calcRates(v) {
+PROCEDURE rates(v) {
   LOCAL  alpha, beta, sum
   q10 = 3^((celsius - 6.3)/10)
 
@@ -131,5 +137,3 @@ PROCEDURE calcRates(v) {
   hyhtsinf = 1 / (1 + exp((v + 87) / 10))
   hyhtstau = 227.3 + 170.7 * exp(-0.5 * ((v + 80.4) / 11)^2)
 }
-
-UNITSON

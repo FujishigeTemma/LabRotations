@@ -4,6 +4,12 @@ COMMENT
 the effect of conductivity change in soma
 ENDCOMMENT
 
+NEURON { 
+  SUFFIX nca
+  USEION nca READ enca WRITE inca VALENCE 2 
+  RANGE gnca, gncabar, cinf, ctau, dinf, dtau, inca
+}
+
 UNITS {
   (mA) =(milliamp)
   (mV) =(millivolt)
@@ -12,27 +18,22 @@ UNITS {
   (nA) = (nanoamp)
   (mM) = (millimolar)
   (um) = (micron)
+}
+
+UNITS {
   FARADAY = 96520 (coul)
   R = 8.3134  (joule/degC)
 }
 
-NEURON { 
-  SUFFIX nca
-  USEION nca READ enca WRITE inca VALENCE 2 
-  RANGE gnca, gncabar, cinf, ctau, dinf, dtau, inca
+INDEPENDENT {
+  t FROM 0 TO 100 WITH 100 (ms)
 }
-
-INDEPENDENT {t FROM 0 TO 100 WITH 100 (ms)}
 
 PARAMETER {
+  celsius
   v (mV) 
-  celsius = 6.3 (degC)
   dt (ms) 
   gncabar (mho/cm2)
-}
-
-STATE {
-  c d
 }
 
 ASSIGNED {
@@ -44,7 +45,13 @@ ASSIGNED {
   dtau (ms) 
   cexp
   dexp      
-} 
+}
+
+STATE {
+  c
+  d
+}
+
 
 BREAKPOINT {
   SOLVE states
@@ -52,10 +59,9 @@ BREAKPOINT {
   inca = gnca * (v - enca)
 }
 
-UNITSOFF
-
 INITIAL {
-  calcRates(v)
+  rates(v)
+
   c = cinf
   d = dinf
 }
@@ -63,13 +69,13 @@ INITIAL {
 LOCAL q10
 
 PROCEDURE states() {
-  calcRates(v)
+  rates(v)
 
   c = c + (cinf-c) * (1 - exp(-dt*q10/ctau))
   d = d + (dinf-d) * (1 - exp(-dt*q10/dtau))
 }
 
-PROCEDURE calcRates(v) {
+PROCEDURE rates(v) {
   LOCAL alpha, beta, sum
   q10 = 3^((celsius - 6.3)/10)
 
@@ -95,6 +101,3 @@ FUNCTION vtrap(x, y) {  :Traps for 0 in denominator of rate eqns.
     vtrap = x / (exp(x / y) - 1)
   }
 }
-
-UNITSON
-

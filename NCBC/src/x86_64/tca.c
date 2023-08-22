@@ -1,6 +1,6 @@
 /* Created by Language version: 7.7.0 */
-/* NOT VECTORIZED */
-#define NRN_VECTORIZED 0
+/* VECTORIZED */
+#define NRN_VECTORIZED 1
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -31,19 +31,19 @@ extern double hoc_Exp(double);
 #define _net_receive _net_receive__cat 
 #define states states__cat 
  
-#define _threadargscomma_ /**/
-#define _threadargsprotocomma_ /**/
-#define _threadargs_ /**/
-#define _threadargsproto_ /**/
+#define _threadargscomma_ _p, _ppvar, _thread, _nt,
+#define _threadargsprotocomma_ double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt,
+#define _threadargs_ _p, _ppvar, _thread, _nt
+#define _threadargsproto_ double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt
  	/*SUPPRESS 761*/
 	/*SUPPRESS 762*/
 	/*SUPPRESS 763*/
 	/*SUPPRESS 765*/
 	 extern double *getarg();
- static double *_p; static Datum *_ppvar;
+ /* Thread safe. No static _p or _ppvar. */
  
-#define t nrn_threads->_t
-#define dt nrn_threads->_dt
+#define t _nt->_t
+#define dt _nt->_dt
 #define gcatbar _p[0]
 #define gcatbar_columnindex 0
 #define itca _p[1]
@@ -56,16 +56,18 @@ extern double hoc_Exp(double);
 #define cai_columnindex 4
 #define cao _p[5]
 #define cao_columnindex 5
-#define Dm _p[6]
-#define Dm_columnindex 6
-#define Dh _p[7]
-#define Dh_columnindex 7
-#define gcat _p[8]
-#define gcat_columnindex 8
-#define etca _p[9]
-#define etca_columnindex 9
-#define _g _p[10]
-#define _g_columnindex 10
+#define gcat _p[6]
+#define gcat_columnindex 6
+#define etca _p[7]
+#define etca_columnindex 7
+#define Dm _p[8]
+#define Dm_columnindex 8
+#define Dh _p[9]
+#define Dh_columnindex 9
+#define v _p[10]
+#define v_columnindex 10
+#define _g _p[11]
+#define _g_columnindex 11
 #define _ion_etca	*_ppvar[0]._pval
 #define _ion_itca	*_ppvar[1]._pval
 #define _ion_ditcadv	*_ppvar[2]._pval
@@ -85,6 +87,8 @@ extern double hoc_Exp(double);
 extern "C" {
 #endif
  static int hoc_nrnpointerindex =  -1;
+ static Datum* _extcall_thread;
+ static Prop* _extcall_prop;
  /* external NEURON variables */
  extern double celsius;
  /* declaration of user functions */
@@ -113,7 +117,7 @@ extern void hoc_reg_nmodl_filename(int, const char*);
 
  extern void _nrn_setdata_reg(int, void(*)(Prop*));
  static void _setdata(Prop* _prop) {
- _p = _prop->param; _ppvar = _prop->dparam;
+ _extcall_prop = _prop;
  }
  static void _hoc_setdata() {
  Prop *_prop, *hoc_getdata_range(int);
@@ -144,17 +148,28 @@ extern void hoc_reg_nmodl_filename(int, const char*);
 #define hinf hinf_cat
 #define m_tau m_tau_cat
 #define minf minf_cat
- extern double KTF( double );
- extern double _f_h_tau( double );
- extern double _f_m_tau( double );
- extern double _f_minf( double );
- extern double _f_hinf( double );
- extern double efun( double );
- extern double ghk( double , double , double );
- extern double h_tau( double );
- extern double hinf( double );
- extern double m_tau( double );
- extern double minf( double );
+ extern double KTF( _threadargsprotocomma_ double );
+ extern double _f_h_tau( _threadargsprotocomma_ double );
+ extern double _f_m_tau( _threadargsprotocomma_ double );
+ extern double _f_minf( _threadargsprotocomma_ double );
+ extern double _f_hinf( _threadargsprotocomma_ double );
+ extern double efun( _threadargsprotocomma_ double );
+ extern double ghk( _threadargsprotocomma_ double , double , double );
+ extern double h_tau( _threadargsprotocomma_ double );
+ extern double hinf( _threadargsprotocomma_ double );
+ extern double m_tau( _threadargsprotocomma_ double );
+ extern double minf( _threadargsprotocomma_ double );
+ 
+static void _check_hinf(double*, Datum*, Datum*, NrnThread*); 
+static void _check_minf(double*, Datum*, Datum*, NrnThread*); 
+static void _check_m_tau(double*, Datum*, Datum*, NrnThread*); 
+static void _check_h_tau(double*, Datum*, Datum*, NrnThread*); 
+static void _check_table_thread(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt, int _type) {
+   _check_hinf(_p, _ppvar, _thread, _nt);
+   _check_minf(_p, _ppvar, _thread, _nt);
+   _check_m_tau(_p, _ppvar, _thread, _nt);
+   _check_h_tau(_p, _ppvar, _thread, _nt);
+ }
  /* declare global and static user variables */
 #define usetable usetable_cat
  double usetable = 1;
@@ -171,7 +186,6 @@ extern void hoc_reg_nmodl_filename(int, const char*);
  static double delta_t = 0.01;
  static double h0 = 0;
  static double m0 = 0;
- static double v = 0;
  /* connect global user variables to hoc */
  static DoubScal hoc_scdoub[] = {
  "usetable_cat", &usetable_cat,
@@ -214,11 +228,11 @@ extern Prop* need_memb(Symbol*);
 static void nrn_alloc(Prop* _prop) {
 	Prop *prop_ion;
 	double *_p; Datum *_ppvar;
- 	_p = nrn_prop_data_alloc(_mechtype, 11, _prop);
+ 	_p = nrn_prop_data_alloc(_mechtype, 12, _prop);
  	/*initialize range parameters*/
  	gcatbar = 0.003;
  	_prop->param = _p;
- 	_prop->param_size = 11;
+ 	_prop->param_size = 12;
  	_ppvar = nrn_prop_datum_alloc(_mechtype, 6, _prop);
  	_prop->dparam = _ppvar;
  	/*connect ionic variables to this model*/
@@ -247,21 +261,22 @@ extern void hoc_register_tolerance(int, HocStateTolerance*, Symbol***);
 extern void _cvode_abstol( Symbol**, double*, int);
 
  void _tca_reg() {
-	int _vectorized = 0;
+	int _vectorized = 1;
   _initlists();
  	ion_reg("tca", 2.0);
  	ion_reg("ca", 2.0);
  	_tca_sym = hoc_lookup("tca_ion");
  	_ca_sym = hoc_lookup("ca_ion");
- 	register_mech(_mechanism, nrn_alloc,nrn_cur, nrn_jacob, nrn_state, nrn_init, hoc_nrnpointerindex, 0);
+ 	register_mech(_mechanism, nrn_alloc,nrn_cur, nrn_jacob, nrn_state, nrn_init, hoc_nrnpointerindex, 1);
  _mechtype = nrn_get_mechtype(_mechanism[1]);
      _nrn_setdata_reg(_mechtype, _setdata);
      _nrn_thread_reg(_mechtype, 2, _update_ion_pointer);
+     _nrn_thread_table_reg(_mechtype, _check_table_thread);
  #if NMODL_TEXT
   hoc_reg_nmodl_text(_mechtype, nmodl_file_text);
   hoc_reg_nmodl_filename(_mechtype, nmodl_filename);
 #endif
-  hoc_register_prop_size(_mechtype, 11, 6);
+  hoc_register_prop_size(_mechtype, 12, 6);
   hoc_register_dparam_semantics(_mechtype, 0, "tca_ion");
   hoc_register_dparam_semantics(_mechtype, 1, "tca_ion");
   hoc_register_dparam_semantics(_mechtype, 2, "tca_ion");
@@ -292,36 +307,34 @@ static void _modl_cleanup(){ _match_recurse=1;}
  
 static int _ode_spec1(_threadargsproto_);
 /*static int _ode_matsol1(_threadargsproto_);*/
- static double _n_h_tau(double);
- static double _n_m_tau(double);
- static double _n_minf(double);
- static double _n_hinf(double);
+ static double _n_h_tau(_threadargsprotocomma_ double _lv);
+ static double _n_m_tau(_threadargsprotocomma_ double _lv);
+ static double _n_minf(_threadargsprotocomma_ double _lv);
+ static double _n_hinf(_threadargsprotocomma_ double _lv);
  static int _slist1[2], _dlist1[2];
  static int states(_threadargsproto_);
  
 /*CVODE*/
- static int _ode_spec1 () {_reset=0;
- {
+ static int _ode_spec1 (double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt) {int _reset = 0; {
    Dm = ( minf ( _threadargscomma_ v ) - m ) / m_tau ( _threadargscomma_ v ) ;
    Dh = ( hinf ( _threadargscomma_ v ) - h ) / h_tau ( _threadargscomma_ v ) ;
    }
  return _reset;
 }
- static int _ode_matsol1 () {
+ static int _ode_matsol1 (double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt) {
  Dm = Dm  / (1. - dt*( ( ( ( - 1.0 ) ) ) / m_tau ( _threadargscomma_ v ) )) ;
  Dh = Dh  / (1. - dt*( ( ( ( - 1.0 ) ) ) / h_tau ( _threadargscomma_ v ) )) ;
   return 0;
 }
  /*END CVODE*/
- static int states () {_reset=0;
- {
+ static int states (double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt) { {
     m = m + (1. - exp(dt*(( ( ( - 1.0 ) ) ) / m_tau ( _threadargscomma_ v ))))*(- ( ( ( minf ( _threadargscomma_ v ) ) ) / m_tau ( _threadargscomma_ v ) ) / ( ( ( ( - 1.0 ) ) ) / m_tau ( _threadargscomma_ v ) ) - m) ;
     h = h + (1. - exp(dt*(( ( ( - 1.0 ) ) ) / h_tau ( _threadargscomma_ v ))))*(- ( ( ( hinf ( _threadargscomma_ v ) ) ) / h_tau ( _threadargscomma_ v ) ) / ( ( ( ( - 1.0 ) ) ) / h_tau ( _threadargscomma_ v ) ) - h) ;
    }
   return 0;
 }
  
-double ghk (  double _lv , double _lci , double _lco ) {
+double ghk ( _threadargsprotocomma_ double _lv , double _lci , double _lco ) {
    double _lghk;
  double _lnu , _lf ;
  _lf = KTF ( _threadargscomma_ celsius ) / 2.0 ;
@@ -333,11 +346,15 @@ return _lghk;
  
 static void _hoc_ghk(void) {
   double _r;
-   _r =  ghk (  *getarg(1) , *getarg(2) , *getarg(3) );
+   double* _p; Datum* _ppvar; Datum* _thread; NrnThread* _nt;
+   if (_extcall_prop) {_p = _extcall_prop->param; _ppvar = _extcall_prop->dparam;}else{ _p = (double*)0; _ppvar = (Datum*)0; }
+  _thread = _extcall_thread;
+  _nt = nrn_threads;
+ _r =  ghk ( _p, _ppvar, _thread, _nt, *getarg(1) , *getarg(2) , *getarg(3) );
  hoc_retpushx(_r);
 }
  
-double KTF (  double _lcelsius ) {
+double KTF ( _threadargsprotocomma_ double _lcelsius ) {
    double _lKTF;
  _lKTF = ( ( 25. / 293.15 ) * ( _lcelsius + 273.15 ) ) ;
    
@@ -346,11 +363,15 @@ return _lKTF;
  
 static void _hoc_KTF(void) {
   double _r;
-   _r =  KTF (  *getarg(1) );
+   double* _p; Datum* _ppvar; Datum* _thread; NrnThread* _nt;
+   if (_extcall_prop) {_p = _extcall_prop->param; _ppvar = _extcall_prop->dparam;}else{ _p = (double*)0; _ppvar = (Datum*)0; }
+  _thread = _extcall_thread;
+  _nt = nrn_threads;
+ _r =  KTF ( _p, _ppvar, _thread, _nt, *getarg(1) );
  hoc_retpushx(_r);
 }
  
-double efun (  double _lz ) {
+double efun ( _threadargsprotocomma_ double _lz ) {
    double _lefun;
  if ( fabs ( _lz ) < 1e-4 ) {
      _lefun = 1.0 - _lz / 2.0 ;
@@ -364,12 +385,15 @@ return _lefun;
  
 static void _hoc_efun(void) {
   double _r;
-   _r =  efun (  *getarg(1) );
+   double* _p; Datum* _ppvar; Datum* _thread; NrnThread* _nt;
+   if (_extcall_prop) {_p = _extcall_prop->param; _ppvar = _extcall_prop->dparam;}else{ _p = (double*)0; _ppvar = (Datum*)0; }
+  _thread = _extcall_thread;
+  _nt = nrn_threads;
+ _r =  efun ( _p, _ppvar, _thread, _nt, *getarg(1) );
  hoc_retpushx(_r);
 }
  static double _mfac_hinf, _tmin_hinf;
- static void _check_hinf();
- static void _check_hinf() {
+  static void _check_hinf(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt) {
   static int _maktable=1; int _i, _j, _ix = 0;
   double _xi, _tmax;
   if (!usetable) {return;}
@@ -378,19 +402,22 @@ static void _hoc_efun(void) {
    _tmax =  150.0 ;
    _dx = (_tmax - _tmin_hinf)/200.; _mfac_hinf = 1./_dx;
    for (_i=0, _x=_tmin_hinf; _i < 201; _x += _dx, _i++) {
-    _t_hinf[_i] = _f_hinf(_x);
+    _t_hinf[_i] = _f_hinf(_p, _ppvar, _thread, _nt, _x);
    }
   }
  }
 
- double hinf(double _lv){ _check_hinf();
- return _n_hinf(_lv);
+ double hinf(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt, double _lv) { 
+#if 0
+_check_hinf(_p, _ppvar, _thread, _nt);
+#endif
+ return _n_hinf(_p, _ppvar, _thread, _nt, _lv);
  }
 
- static double _n_hinf(double _lv){ int _i, _j;
+ static double _n_hinf(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt, double _lv){ int _i, _j;
  double _xi, _theta;
  if (!usetable) {
- return _f_hinf(_lv); 
+ return _f_hinf(_p, _ppvar, _thread, _nt, _lv); 
 }
  _xi = _mfac_hinf * (_lv - _tmin_hinf);
  if (isnan(_xi)) {
@@ -406,7 +433,7 @@ static void _hoc_efun(void) {
  }
 
  
-double _f_hinf (  double _lv ) {
+double _f_hinf ( _threadargsprotocomma_ double _lv ) {
    double _lhinf;
  double _la , _lb ;
  _la = 1.e-6 * exp ( - _lv / 16.26 ) ;
@@ -418,12 +445,19 @@ return _lhinf;
  
 static void _hoc_hinf(void) {
   double _r;
-    _r =  hinf (  *getarg(1) );
+   double* _p; Datum* _ppvar; Datum* _thread; NrnThread* _nt;
+   if (_extcall_prop) {_p = _extcall_prop->param; _ppvar = _extcall_prop->dparam;}else{ _p = (double*)0; _ppvar = (Datum*)0; }
+  _thread = _extcall_thread;
+  _nt = nrn_threads;
+ 
+#if 1
+ _check_hinf(_p, _ppvar, _thread, _nt);
+#endif
+ _r =  hinf ( _p, _ppvar, _thread, _nt, *getarg(1) );
  hoc_retpushx(_r);
 }
  static double _mfac_minf, _tmin_minf;
- static void _check_minf();
- static void _check_minf() {
+  static void _check_minf(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt) {
   static int _maktable=1; int _i, _j, _ix = 0;
   double _xi, _tmax;
   if (!usetable) {return;}
@@ -432,19 +466,22 @@ static void _hoc_hinf(void) {
    _tmax =  150.0 ;
    _dx = (_tmax - _tmin_minf)/200.; _mfac_minf = 1./_dx;
    for (_i=0, _x=_tmin_minf; _i < 201; _x += _dx, _i++) {
-    _t_minf[_i] = _f_minf(_x);
+    _t_minf[_i] = _f_minf(_p, _ppvar, _thread, _nt, _x);
    }
   }
  }
 
- double minf(double _lv){ _check_minf();
- return _n_minf(_lv);
+ double minf(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt, double _lv) { 
+#if 0
+_check_minf(_p, _ppvar, _thread, _nt);
+#endif
+ return _n_minf(_p, _ppvar, _thread, _nt, _lv);
  }
 
- static double _n_minf(double _lv){ int _i, _j;
+ static double _n_minf(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt, double _lv){ int _i, _j;
  double _xi, _theta;
  if (!usetable) {
- return _f_minf(_lv); 
+ return _f_minf(_p, _ppvar, _thread, _nt, _lv); 
 }
  _xi = _mfac_minf * (_lv - _tmin_minf);
  if (isnan(_xi)) {
@@ -460,7 +497,7 @@ static void _hoc_hinf(void) {
  }
 
  
-double _f_minf (  double _lv ) {
+double _f_minf ( _threadargsprotocomma_ double _lv ) {
    double _lminf;
  double _la , _lb ;
  _la = 0.2 * ( - 1.0 * _lv + 19.26 ) / ( exp ( ( - 1.0 * _lv + 19.26 ) / 10.0 ) - 1.0 ) ;
@@ -472,12 +509,19 @@ return _lminf;
  
 static void _hoc_minf(void) {
   double _r;
-    _r =  minf (  *getarg(1) );
+   double* _p; Datum* _ppvar; Datum* _thread; NrnThread* _nt;
+   if (_extcall_prop) {_p = _extcall_prop->param; _ppvar = _extcall_prop->dparam;}else{ _p = (double*)0; _ppvar = (Datum*)0; }
+  _thread = _extcall_thread;
+  _nt = nrn_threads;
+ 
+#if 1
+ _check_minf(_p, _ppvar, _thread, _nt);
+#endif
+ _r =  minf ( _p, _ppvar, _thread, _nt, *getarg(1) );
  hoc_retpushx(_r);
 }
  static double _mfac_m_tau, _tmin_m_tau;
- static void _check_m_tau();
- static void _check_m_tau() {
+  static void _check_m_tau(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt) {
   static int _maktable=1; int _i, _j, _ix = 0;
   double _xi, _tmax;
   if (!usetable) {return;}
@@ -486,19 +530,22 @@ static void _hoc_minf(void) {
    _tmax =  150.0 ;
    _dx = (_tmax - _tmin_m_tau)/200.; _mfac_m_tau = 1./_dx;
    for (_i=0, _x=_tmin_m_tau; _i < 201; _x += _dx, _i++) {
-    _t_m_tau[_i] = _f_m_tau(_x);
+    _t_m_tau[_i] = _f_m_tau(_p, _ppvar, _thread, _nt, _x);
    }
   }
  }
 
- double m_tau(double _lv){ _check_m_tau();
- return _n_m_tau(_lv);
+ double m_tau(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt, double _lv) { 
+#if 0
+_check_m_tau(_p, _ppvar, _thread, _nt);
+#endif
+ return _n_m_tau(_p, _ppvar, _thread, _nt, _lv);
  }
 
- static double _n_m_tau(double _lv){ int _i, _j;
+ static double _n_m_tau(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt, double _lv){ int _i, _j;
  double _xi, _theta;
  if (!usetable) {
- return _f_m_tau(_lv); 
+ return _f_m_tau(_p, _ppvar, _thread, _nt, _lv); 
 }
  _xi = _mfac_m_tau * (_lv - _tmin_m_tau);
  if (isnan(_xi)) {
@@ -514,7 +561,7 @@ static void _hoc_minf(void) {
  }
 
  
-double _f_m_tau (  double _lv ) {
+double _f_m_tau ( _threadargsprotocomma_ double _lv ) {
    double _lm_tau;
  double _la , _lb ;
  _la = 0.2 * ( - 1.0 * _lv + 19.26 ) / ( exp ( ( - 1.0 * _lv + 19.26 ) / 10.0 ) - 1.0 ) ;
@@ -526,12 +573,19 @@ return _lm_tau;
  
 static void _hoc_m_tau(void) {
   double _r;
-    _r =  m_tau (  *getarg(1) );
+   double* _p; Datum* _ppvar; Datum* _thread; NrnThread* _nt;
+   if (_extcall_prop) {_p = _extcall_prop->param; _ppvar = _extcall_prop->dparam;}else{ _p = (double*)0; _ppvar = (Datum*)0; }
+  _thread = _extcall_thread;
+  _nt = nrn_threads;
+ 
+#if 1
+ _check_m_tau(_p, _ppvar, _thread, _nt);
+#endif
+ _r =  m_tau ( _p, _ppvar, _thread, _nt, *getarg(1) );
  hoc_retpushx(_r);
 }
  static double _mfac_h_tau, _tmin_h_tau;
- static void _check_h_tau();
- static void _check_h_tau() {
+  static void _check_h_tau(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt) {
   static int _maktable=1; int _i, _j, _ix = 0;
   double _xi, _tmax;
   if (!usetable) {return;}
@@ -540,19 +594,22 @@ static void _hoc_m_tau(void) {
    _tmax =  150.0 ;
    _dx = (_tmax - _tmin_h_tau)/200.; _mfac_h_tau = 1./_dx;
    for (_i=0, _x=_tmin_h_tau; _i < 201; _x += _dx, _i++) {
-    _t_h_tau[_i] = _f_h_tau(_x);
+    _t_h_tau[_i] = _f_h_tau(_p, _ppvar, _thread, _nt, _x);
    }
   }
  }
 
- double h_tau(double _lv){ _check_h_tau();
- return _n_h_tau(_lv);
+ double h_tau(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt, double _lv) { 
+#if 0
+_check_h_tau(_p, _ppvar, _thread, _nt);
+#endif
+ return _n_h_tau(_p, _ppvar, _thread, _nt, _lv);
  }
 
- static double _n_h_tau(double _lv){ int _i, _j;
+ static double _n_h_tau(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt, double _lv){ int _i, _j;
  double _xi, _theta;
  if (!usetable) {
- return _f_h_tau(_lv); 
+ return _f_h_tau(_p, _ppvar, _thread, _nt, _lv); 
 }
  _xi = _mfac_h_tau * (_lv - _tmin_h_tau);
  if (isnan(_xi)) {
@@ -568,7 +625,7 @@ static void _hoc_m_tau(void) {
  }
 
  
-double _f_h_tau (  double _lv ) {
+double _f_h_tau ( _threadargsprotocomma_ double _lv ) {
    double _lh_tau;
  double _la , _lb ;
  _la = 1.e-6 * exp ( - _lv / 16.26 ) ;
@@ -580,14 +637,22 @@ return _lh_tau;
  
 static void _hoc_h_tau(void) {
   double _r;
-    _r =  h_tau (  *getarg(1) );
+   double* _p; Datum* _ppvar; Datum* _thread; NrnThread* _nt;
+   if (_extcall_prop) {_p = _extcall_prop->param; _ppvar = _extcall_prop->dparam;}else{ _p = (double*)0; _ppvar = (Datum*)0; }
+  _thread = _extcall_thread;
+  _nt = nrn_threads;
+ 
+#if 1
+ _check_h_tau(_p, _ppvar, _thread, _nt);
+#endif
+ _r =  h_tau ( _p, _ppvar, _thread, _nt, *getarg(1) );
  hoc_retpushx(_r);
 }
  
 static int _ode_count(int _type){ return 2;}
  
 static void _ode_spec(NrnThread* _nt, _Memb_list* _ml, int _type) {
-   Datum* _thread;
+   double* _p; Datum* _ppvar; Datum* _thread;
    Node* _nd; double _v; int _iml, _cntml;
   _cntml = _ml->_nodecount;
   _thread = _ml->_thread;
@@ -598,10 +663,11 @@ static void _ode_spec(NrnThread* _nt, _Memb_list* _ml, int _type) {
   etca = _ion_etca;
   cai = _ion_cai;
   cao = _ion_cao;
-     _ode_spec1 ();
+     _ode_spec1 (_p, _ppvar, _thread, _nt);
   }}
  
 static void _ode_map(int _ieq, double** _pv, double** _pvdot, double* _pp, Datum* _ppd, double* _atol, int _type) { 
+	double* _p; Datum* _ppvar;
  	int _i; _p = _pp; _ppvar = _ppd;
 	_cvode_ieq = _ieq;
 	for (_i=0; _i < 2; ++_i) {
@@ -611,11 +677,11 @@ static void _ode_map(int _ieq, double** _pv, double** _pvdot, double* _pp, Datum
  }
  
 static void _ode_matsol_instance1(_threadargsproto_) {
- _ode_matsol1 ();
+ _ode_matsol1 (_p, _ppvar, _thread, _nt);
  }
  
 static void _ode_matsol(NrnThread* _nt, _Memb_list* _ml, int _type) {
-   Datum* _thread;
+   double* _p; Datum* _ppvar; Datum* _thread;
    Node* _nd; double _v; int _iml, _cntml;
   _cntml = _ml->_nodecount;
   _thread = _ml->_thread;
@@ -637,33 +703,35 @@ static void _ode_matsol(NrnThread* _nt, _Memb_list* _ml, int _type) {
    nrn_update_ion_pointer(_ca_sym, _ppvar, 4, 2);
  }
 
-static void initmodel() {
-  int _i; double _save;_ninits++;
- _save = t;
- t = 0.0;
-{
+static void initmodel(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt) {
+  int _i; double _save;{
   h = h0;
   m = m0;
  {
    m = minf ( _threadargscomma_ v ) ;
    h = hinf ( _threadargscomma_ v ) ;
-   
-/*VERBATIM*/
-  cai=_ion_cai;
- }
-  _sav_indep = t; t = _save;
-
+   }
+ 
 }
 }
 
 static void nrn_init(NrnThread* _nt, _Memb_list* _ml, int _type){
+double* _p; Datum* _ppvar; Datum* _thread;
 Node *_nd; double _v; int* _ni; int _iml, _cntml;
 #if CACHEVEC
     _ni = _ml->_nodeindices;
 #endif
 _cntml = _ml->_nodecount;
+_thread = _ml->_thread;
 for (_iml = 0; _iml < _cntml; ++_iml) {
  _p = _ml->_data[_iml]; _ppvar = _ml->_pdata[_iml];
+
+#if 0
+ _check_hinf(_p, _ppvar, _thread, _nt);
+ _check_minf(_p, _ppvar, _thread, _nt);
+ _check_m_tau(_p, _ppvar, _thread, _nt);
+ _check_h_tau(_p, _ppvar, _thread, _nt);
+#endif
 #if CACHEVEC
   if (use_cachevec) {
     _v = VEC_V(_ni[_iml]);
@@ -677,10 +745,11 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
   etca = _ion_etca;
   cai = _ion_cai;
   cao = _ion_cao;
- initmodel();
- }}
+ initmodel(_p, _ppvar, _thread, _nt);
+ }
+}
 
-static double _nrn_current(double _v){double _current=0.;v=_v;{ {
+static double _nrn_current(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt, double _v){double _current=0.;v=_v;{ {
    gcat = gcatbar * m * m * h ;
    itca = gcat * ghk ( _threadargscomma_ v , cai , cao ) ;
    }
@@ -689,12 +758,14 @@ static double _nrn_current(double _v){double _current=0.;v=_v;{ {
 } return _current;
 }
 
-static void nrn_cur(NrnThread* _nt, _Memb_list* _ml, int _type){
+static void nrn_cur(NrnThread* _nt, _Memb_list* _ml, int _type) {
+double* _p; Datum* _ppvar; Datum* _thread;
 Node *_nd; int* _ni; double _rhs, _v; int _iml, _cntml;
 #if CACHEVEC
     _ni = _ml->_nodeindices;
 #endif
 _cntml = _ml->_nodecount;
+_thread = _ml->_thread;
 for (_iml = 0; _iml < _cntml; ++_iml) {
  _p = _ml->_data[_iml]; _ppvar = _ml->_pdata[_iml];
 #if CACHEVEC
@@ -709,10 +780,10 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
   etca = _ion_etca;
   cai = _ion_cai;
   cao = _ion_cao;
- _g = _nrn_current(_v + .001);
+ _g = _nrn_current(_p, _ppvar, _thread, _nt, _v + .001);
  	{ double _ditca;
   _ditca = itca;
- _rhs = _nrn_current(_v);
+ _rhs = _nrn_current(_p, _ppvar, _thread, _nt, _v);
   _ion_ditcadv += (_ditca - itca)/.001 ;
  	}
  _g = (_g - _rhs)/.001;
@@ -726,14 +797,18 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
 	NODERHS(_nd) -= _rhs;
   }
  
-}}
+}
+ 
+}
 
-static void nrn_jacob(NrnThread* _nt, _Memb_list* _ml, int _type){
+static void nrn_jacob(NrnThread* _nt, _Memb_list* _ml, int _type) {
+double* _p; Datum* _ppvar; Datum* _thread;
 Node *_nd; int* _ni; int _iml, _cntml;
 #if CACHEVEC
     _ni = _ml->_nodeindices;
 #endif
 _cntml = _ml->_nodecount;
+_thread = _ml->_thread;
 for (_iml = 0; _iml < _cntml; ++_iml) {
  _p = _ml->_data[_iml];
 #if CACHEVEC
@@ -746,14 +821,18 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
 	NODED(_nd) += _g;
   }
  
-}}
+}
+ 
+}
 
-static void nrn_state(NrnThread* _nt, _Memb_list* _ml, int _type){
+static void nrn_state(NrnThread* _nt, _Memb_list* _ml, int _type) {
+double* _p; Datum* _ppvar; Datum* _thread;
 Node *_nd; double _v = 0.0; int* _ni; int _iml, _cntml;
 #if CACHEVEC
     _ni = _ml->_nodeindices;
 #endif
 _cntml = _ml->_nodecount;
+_thread = _ml->_thread;
 for (_iml = 0; _iml < _cntml; ++_iml) {
  _p = _ml->_data[_iml]; _ppvar = _ml->_pdata[_iml];
  _nd = _ml->_nodelist[_iml];
@@ -771,15 +850,15 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
   etca = _ion_etca;
   cai = _ion_cai;
   cao = _ion_cao;
- { error =  states();
- if(error){fprintf(stderr,"at line 49 in file tca.mod:\n  SOLVE states METHOD cnexp\n"); nrn_complain(_p); abort_run(error);}
- } }}
+ {   states(_p, _ppvar, _thread, _nt);
+  } }}
 
 }
 
 static void terminal(){}
 
-static void _initlists() {
+static void _initlists(){
+ double _x; double* _p = &_x;
  int _i; static int _first = 1;
   if (!_first) return;
  _slist1[0] = m_columnindex;  _dlist1[0] = Dm_columnindex;
@@ -791,17 +870,32 @@ static void _initlists() {
 _first = 0;
 }
 
+#if defined(__cplusplus)
+} /* extern "C" */
+#endif
+
 #if NMODL_TEXT
 static const char* nmodl_filename = "/Users/temma/ghq/LabRotations/NCBC/src/mechanisms/tca.mod";
 static const char* nmodl_file_text = 
   "TITLE T-calcium channel From Migliore CA3\n"
-  ": T-type calcium channel\n"
   "\n"
+  "COMMENT\n"
+  "T-type calcium channel\n"
+  "ENDCOMMENT\n"
+  "\n"
+  "NEURON {\n"
+  "  SUFFIX cat\n"
+  "  USEION tca READ etca WRITE itca VALENCE 2\n"
+  "  USEION ca READ cai, cao VALENCE 2\n"
+  "  RANGE gcatbar, cai, itca, etca\n"
+  "}\n"
   "\n"
   "UNITS {\n"
   "  (mA) = (milliamp)\n"
   "  (mV) = (millivolt)\n"
+  "}\n"
   "\n"
+  "UNITS {\n"
   "  FARADAY = 96520 (coul)\n"
   "  R = 8.3134 (joule/degC)\n"
   "  KTOMV = .0853 (mV/degC)\n"
@@ -809,103 +903,100 @@ static const char* nmodl_file_text =
   "\n"
   "PARAMETER {\n"
   "  v (mV)\n"
-  "  celsius = 6.3  (degC)\n"
+  "  celsius (degC)\n"
   "  gcatbar=.003 (mho/cm2)\n"
   "  cai (mM)\n"
   "  cao (mM)\n"
   "}\n"
   "\n"
-  "\n"
-  "NEURON {\n"
-  "  SUFFIX cat\n"
-  "  USEION tca READ etca WRITE itca VALENCE 2\n"
-  "  USEION ca READ cai, cao VALENCE 2\n"
-  "        RANGE gcatbar,cai, itca, etca\n"
-  "}\n"
-  "\n"
-  "STATE {\n"
-  "  m h \n"
-  "}\n"
-  "\n"
   "ASSIGNED {\n"
   "  itca (mA/cm2)\n"
-  "        gcat (mho/cm2)\n"
+  "  gcat (mho/cm2)\n"
   "  etca (mV)\n"
   "}\n"
   "\n"
+  "STATE {\n"
+  "  m\n"
+  "  h \n"
+  "}\n"
+  "\n"
   "INITIAL {\n"
-  "      m = minf(v)\n"
-  "      h = hinf(v)\n"
-  "  VERBATIM\n"
-  "  cai=_ion_cai;\n"
-  "  ENDVERBATIM\n"
+  "  m = minf(v)\n"
+  "  h = hinf(v)\n"
   "}\n"
   "\n"
   "BREAKPOINT {\n"
   "  SOLVE states METHOD cnexp\n"
-  "  gcat = gcatbar*m*m*h\n"
-  "  itca = gcat*ghk(v,cai,cao)\n"
   "\n"
+  "  gcat = gcatbar * m * m * h\n"
+  "  itca = gcat * ghk(v, cai, cao)\n"
   "}\n"
   "\n"
-  "DERIVATIVE states {  : exact when v held constant\n"
-  "  m' = (minf(v) - m)/m_tau(v)\n"
-  "  h' = (hinf(v) - h)/h_tau(v)\n"
+  "DERIVATIVE states { :exact when v held constant\n"
+  "  m' = (minf(v) - m) / m_tau(v)\n"
+  "  h' = (hinf(v) - h) / h_tau(v)\n"
   "}\n"
   "\n"
   "\n"
   "FUNCTION ghk(v(mV), ci(mM), co(mM)) (mV) {\n"
-  "        LOCAL nu,f\n"
+  "  LOCAL nu,f\n"
   "\n"
-  "        f = KTF(celsius)/2\n"
-  "        nu = v/f\n"
-  "        ghk=-f*(1. - (ci/co)*exp(nu))*efun(nu)\n"
+  "  f = KTF(celsius) / 2\n"
+  "  nu = v / f\n"
+  "  ghk = -f * (1. - (ci / co) * exp(nu)) * efun(nu)\n"
   "}\n"
   "\n"
   "FUNCTION KTF(celsius (DegC)) (mV) {\n"
-  "        KTF = ((25./293.15)*(celsius + 273.15))\n"
+  "  KTF = ((25. / 293.15) * (celsius + 273.15))\n"
   "}\n"
   "\n"
   "\n"
   "FUNCTION efun(z) {\n"
   "  if (fabs(z) < 1e-4) {\n"
   "    efun = 1 - z/2\n"
-  "  }else{\n"
-  "    efun = z/(exp(z) - 1)\n"
+  "  } else {\n"
+  "    efun = z / (exp(z) - 1)\n"
   "  }\n"
   "}\n"
   "\n"
   "FUNCTION hinf(v(mV)) {\n"
   "  LOCAL a,b\n"
   "  TABLE FROM -150 TO 150 WITH 200\n"
-  "  a = 1.e-6*exp(-v/16.26)\n"
-  "  b = 1/(exp((-v+29.79)/10)+1)\n"
-  "  hinf = a/(a+b)\n"
+  "\n"
+  "  a = 1.e-6 * exp(-v / 16.26)\n"
+  "  b = 1 / (exp((-v + 29.79) / 10) + 1)\n"
+  "\n"
+  "  hinf = a / (a + b)\n"
   "}\n"
   "\n"
   "FUNCTION minf(v(mV)) {\n"
   "  LOCAL a,b\n"
   "  TABLE FROM -150 TO 150 WITH 200\n"
-  "        \n"
-  "  a = 0.2*(-1.0*v+19.26)/(exp((-1.0*v+19.26)/10.0)-1.0)\n"
-  "  b = 0.009*exp(-v/22.03)\n"
-  "  minf = a/(a+b)\n"
+  "\n"
+  "  a = 0.2 * (-1.0 * v + 19.26) / (exp((-1.0 * v + 19.26) / 10.0) - 1.0)\n"
+  "  b = 0.009 * exp(-v / 22.03)\n"
+  "\n"
+  "  minf = a / (a + b)\n"
   "}\n"
   "\n"
   "FUNCTION m_tau(v(mV)) (ms) {\n"
   "  LOCAL a,b\n"
   "  TABLE FROM -150 TO 150 WITH 200\n"
-  "  a = 0.2*(-1.0*v+19.26)/(exp((-1.0*v+19.26)/10.0)-1.0)\n"
+  "\n"
+  "  a = 0.2 * (-1.0 * v + 19.26) / (exp((-1.0 * v + 19.26) / 10.0) - 1.0)\n"
   "  b = 0.009*exp(-v/22.03)\n"
+  "\n"
   "  m_tau = 1/(a+b)\n"
   "}\n"
   "\n"
   "FUNCTION h_tau(v(mV)) (ms) {\n"
   "  LOCAL a,b\n"
-  "        TABLE FROM -150 TO 150 WITH 200\n"
-  "  a = 1.e-6*exp(-v/16.26)\n"
-  "  b = 1/(exp((-v+29.79)/10.)+1.)\n"
-  "  h_tau = 1/(a+b)\n"
+  "  TABLE FROM -150 TO 150 WITH 200\n"
+  "\n"
+  "  a = 1.e-6 * exp(-v / 16.26)\n"
+  "  b = 1 / (exp((-v + 29.79) / 10.) + 1.)\n"
+  "\n"
+  "  h_tau = 1 / (a + b)\n"
   "}\n"
   ;
 #endif

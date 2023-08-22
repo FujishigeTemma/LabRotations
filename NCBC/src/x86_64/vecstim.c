@@ -373,7 +373,7 @@ static const char* nmodl_file_text =
   "  currentIndex = 0\n"
   "  processElement()\n"
   "  if (currentIndex > 0) {\n"
-  "      net_send(eventTime - t, 1)\n"
+  "    net_send(eventTime - t, 1)\n"
   "  }\n"
   "}\n"
   "\n"
