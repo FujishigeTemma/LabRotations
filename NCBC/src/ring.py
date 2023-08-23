@@ -5,11 +5,10 @@ import h5py as h5
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.fft import fft, fftfreq, fftshift
-from scipy import stats
 from typeid import TypeID, from_string
 
 import simulator
-from networks import DentateGyrus
+from networks import Ring
 from recorders import DB, ActionPotentialRecorder, VoltageRecorder
 from spikes import homogeneous_poisson_process, inhomogeneous_poisson_process
 
@@ -33,12 +32,12 @@ def set_job_id(ctx, param, value):
 @click.option("-f", "--frequency", default=10, type=int, help="Frequency of the stimuli.")
 @click.option("--with-gap-junctions", is_flag=True, help="Include gap junctions.")
 @click.option("-o", "--output", default="outputs", type=click.Path(exists=True), help="Path to output directory.")
-def simulate_dentate_gyrus(job_id: TypeID, seed: int, with_gap_junctions: bool, stimuli: str, frequency: int, output: str):
+def simulate_ring(job_id: TypeID, seed: int, with_gap_junctions: bool, stimuli: str, frequency: int, output: str):
     simulator.setup(seed=seed)
 
-    DG = DentateGyrus(with_gap_junctions=with_gap_junctions)
+    RING = Ring(with_gap_junctions=with_gap_junctions)
 
-    n_connection_patterns = 24
+    n_cells = len(RING.BCs.cells)
 
     temporal_patterns = []
     match stimuli:
@@ -49,10 +48,11 @@ def simulate_dentate_gyrus(job_id: TypeID, seed: int, with_gap_junctions: bool, 
                         t_start=0,
                         t_stop=0.5,
                         rate=frequency,
+                        refractory_period=0.001,
                     )
                     * 1000
                 ).round(1)
-                for _ in range(n_connection_patterns)
+                for _ in range(n_cells)
             ]
         case "inhomogeneous_poisson_process":
             temporal_patterns = [
@@ -63,53 +63,34 @@ def simulate_dentate_gyrus(job_id: TypeID, seed: int, with_gap_junctions: bool, 
                         sampling_interval=0.0001,
                         rate_profile_frequency=frequency,
                         rate_profile_amplitude=100,
+                        refractory_period=0.001,
                     )
                     * 1000
                 ).round(1)
-                for _ in range(n_connection_patterns)
+                for _ in range(n_cells)
             ]
 
     os.makedirs(os.path.join(output, str(job_id)), exist_ok=True)
 
-    with h5.File(os.path.join(output, str(job_id), "dentate_gyrus.h5"), "a") as f:
+    with h5.File(os.path.join(output, str(job_id), "ring.h5"), "a") as f:
         dataset = f.require_dataset(
-            "action_potentials/PerforantPathway",
+            "action_potentials/input",
             shape=(len(temporal_patterns),),
             dtype=h5.vlen_dtype(np.float64),
         )
         dataset[:] = temporal_patterns
 
-    n_cells = len(DG.GCs.cells)
-    pdf = stats.norm.pdf(np.arange(n_cells), loc=n_cells / 2, scale=n_cells / 2)
-    pdf /= pdf.sum()  # type: ignore
+    for i in range(n_cells):
+        spatial_pattern = [i]
+        RING.evoke_BC(temporal_patterns[i].tolist(), spatial_pattern, weight=0.01)
 
-    indeces = np.arange(n_cells)
-    centers = np.random.randint(0, n_cells, size=n_connection_patterns)
-
-    for i, center in enumerate(centers):
-        relative = np.roll(indeces, -center)
-        spatial_pattern = np.random.choice(relative, size=100, p=pdf, replace=False)
-        DG.evoke_GC(temporal_patterns[i].tolist(), spatial_pattern.tolist(), weight=0.001)
-
-    n_cells = len(DG.BCs.cells)
-    pdf = stats.norm.pdf(np.arange(n_cells), loc=n_cells / 2, scale=n_cells / 2)
-    pdf /= pdf.sum()  # type: ignore
-
-    indeces = np.arange(n_cells)
-    centers = np.random.randint(0, n_cells, size=n_connection_patterns)
-
-    for i, center in enumerate(centers):
-        relative = np.roll(indeces, -center)
-        spatial_pattern = np.random.choice(relative, size=1, p=pdf, replace=False)
-        DG.evoke_BC(temporal_patterns[i].tolist(), spatial_pattern.tolist(), weight=0.001)
-
-    vr = VoltageRecorder(DG)
-    apr = ActionPotentialRecorder(DG)
+    vr = VoltageRecorder(RING)
+    apr = ActionPotentialRecorder(RING)
 
     simulator.run(warmup=2000, duration=600)
 
-    vr.save(os.path.join(output, str(job_id), "dentate_gyrus.h5"))
-    apr.save(os.path.join(output, str(job_id), "dentate_gyrus.h5"))
+    vr.save(os.path.join(output, str(job_id), "ring.h5"))
+    apr.save(os.path.join(output, str(job_id), "ring.h5"))
 
     fig = vr.plot()
     fig.savefig(os.path.join(output, str(job_id), "voltages.png"))
@@ -117,7 +98,7 @@ def simulate_dentate_gyrus(job_id: TypeID, seed: int, with_gap_junctions: bool, 
     fig = apr.plot()
     fig.savefig(os.path.join(output, str(job_id), "action_potentials.png"))
 
-    with DB(os.path.join(output, "dentate_gyrus.sqlite")) as db:
+    with DB(os.path.join(output, "ring.sqlite")) as db:
         row = {
             "id": str(job_id),
             "seed": seed,
@@ -132,8 +113,8 @@ def simulate_dentate_gyrus(job_id: TypeID, seed: int, with_gap_junctions: bool, 
 @click.command()
 @click.option("--job-id", required=True, type=click.UNPROCESSED, callback=set_job_id, help="ID of the job.")
 @click.option("-o", "--output", default="outputs", type=click.Path(exists=True), help="Path to output directory.")
-def analyze_dentate_gyrus(job_id: TypeID, output: str):
-    with h5.File(os.path.join(output, str(job_id), "dentate_gyrus.h5"), "r") as f:
+def analyze_ring(job_id: TypeID, output: str):
+    with h5.File(os.path.join(output, str(job_id), "ring.h5"), "r") as f:
         APs = f["action_potentials"]
         assert isinstance(APs, h5.Group)
 
@@ -173,7 +154,7 @@ def analyze_dentate_gyrus(job_id: TypeID, output: str):
         axes1[1].set_xlabel("Frequency (Hz)")
         axes1[1].set_ylabel("Amplitude")
         axes1[1].set_xlim(0, 200)
-        axes1[1].set_ylim(0, 300)
+        axes1[1].set_ylim(0, 1000)
 
         axes1[0].legend(loc="upper right")
         axes1[1].legend(loc="upper right")

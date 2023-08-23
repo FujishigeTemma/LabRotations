@@ -35,7 +35,11 @@ class ActionPotentialRecorder:
                 dataset[:] = [record.as_numpy() for record in records]
 
     def plot(self):
-        fig, axes = plt.subplots(nrows=len(self.records_by_population_id), ncols=1, figsize=(8.27, 11.69))
+        nrow = len(self.records_by_population_id)
+        fig, axes = plt.subplots(nrows=nrow, ncols=1, figsize=(8.27, 11.69))
+
+        if nrow == 1:
+            axes = np.array([axes])
 
         for i, population_id in enumerate(self.records_by_population_id.keys()):
             records = self.records_by_population_id[population_id]

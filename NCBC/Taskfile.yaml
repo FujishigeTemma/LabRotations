@@ -12,11 +12,6 @@ tasks:
       - rm -rf ../x86_64
       - rye run nrnivmodl
       - mv x86_64 ../x86_64
-  run:
-    deps:
-      - run:positive
-      - run:negative
-      - run:propagation
   run:gap:
     dir: src
     cmds:
@@ -25,7 +20,11 @@ tasks:
     dir: src
     cmds:
       - rye run python cli.py simulate-epsp-propagation -o ../outputs
-  run:net:
+  run:ring:
+    dir: src
+    cmds:
+      - rye run python cli.py simulate-ring -o ../outputs {{ .CLI_ARGS }}
+  run:dentate-gyrus:
     dir: src
     cmds:
       - rye run python cli.py simulate-dentate-gyrus -o ../outputs {{ .CLI_ARGS }}
@@ -33,6 +32,20 @@ tasks:
     dir: src
     cmds:
       - rye run python cli.py analyze-intrinsic-properties -o ../outputs
+  analyze:ring:
+    dir: src
+    cmds:
+      - rye run python cli.py analyze-ring -o ../outputs {{ .CLI_ARGS }}
+  analyze:ring:all:
+    dir: src
+    vars:
+      IDS:
+        sh: echo "SELECT id FROM jobs;" | sqlite3 ../outputs/ring.sqlite
+    cmds:
+      - for: { var: IDS, as: ID }
+        task: analyze:ring
+        vars:
+          CLI_ARGS: --job-id {{ .ID }}
   analyze:dentate-gyrus:
     dir: src
     cmds:
