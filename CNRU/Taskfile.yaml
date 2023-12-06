@@ -1,0 +1,12 @@
+version: 3
+
+tasks:
+  train:decoder:
+    cmds:
+      - rye run python src/cli.py train-decoder -c train.toml
+  finetune:
+    cmds:
+      - rye run python src/cli.py finetune -c finetune.toml
+  reconstruct:
+    cmds:
+      - rye run python src/cli.py reconstruct -c reconstruct.toml

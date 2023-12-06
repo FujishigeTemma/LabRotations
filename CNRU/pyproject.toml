@@ -1,0 +1,33 @@
+[project]
+name = "cnru"
+version = "0.1.0"
+description = "Add your description here"
+authors = [{ name = "FUJISHIGE TEMMA", email = "tenma.x0@gmail.com" }]
+dependencies = [
+    "scipy>=1.10.1",
+    "torch==1.13.1",
+    "torchvision==0.14.1",
+    "torchaudio==0.13.1",
+    "timm>=0.9.10",
+    "matplotlib>=3.7.4",
+    "wandb>=0.16.0",
+    "tomli>=2.0.1",
+]
+readme = "README.md"
+requires-python = "< 3.10"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+managed = true
+dev-dependencies = ["ruff>=0.1.5", "torchinfo>=1.8.0"]
+
+[[tool.rye.sources]]
+name = "torch"
+url = "https://download.pytorch.org/whl/cu111"
+type = "index"
+
+[tool.hatch.metadata]
+allow-direct-references = true
