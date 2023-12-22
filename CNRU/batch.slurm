@@ -9,4 +9,4 @@
 #SBATCH --mail-user=temma-fujishige@oist.jp
 
 cd /home/t/temma-fujishige/LabRotations/CNRU
-rye run python src/cli.py train-decoder -c train.toml
+rye run python src/cli.py train -c train.toml

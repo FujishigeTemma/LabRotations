@@ -4,17 +4,19 @@ version = "0.1.0"
 description = "Add your description here"
 authors = [{ name = "FUJISHIGE TEMMA", email = "tenma.x0@gmail.com" }]
 dependencies = [
-    "scipy>=1.10.1",
-    "torch==1.13.1",
-    "torchvision==0.14.1",
-    "torchaudio==0.13.1",
-    "timm>=0.9.10",
-    "matplotlib>=3.7.4",
-    "wandb>=0.16.0",
-    "tomli>=2.0.1",
+    "matplotlib>=3.8.2",
+    "wandb>=0.16.1",
+    "jax[cpu]>=0.4.23; sys_platform == 'darwin'",
+    "jax[cuda11_pip]>=0.4.23; sys_platform == 'linux'",
+    "flax>=0.7.5",
+    "orbax-checkpoint>=0.4.8",
+    "orbax-export>=0.0.3",
+    "tensorflow-datasets>=4.9.4",
+    "tf-nightly>=2.16.0.dev20231219",
+    "tqdm>=4.66.1",
 ]
 readme = "README.md"
-requires-python = "< 3.10"
+requires-python = ">= 3.11"
 
 [build-system]
 requires = ["hatchling"]
@@ -22,12 +24,15 @@ build-backend = "hatchling.build"
 
 [tool.rye]
 managed = true
-dev-dependencies = ["ruff>=0.1.5", "torchinfo>=1.8.0"]
+dev-dependencies = ["ruff>=0.1.7"]
 
 [[tool.rye.sources]]
-name = "torch"
-url = "https://download.pytorch.org/whl/cu111"
-type = "index"
+name = "jax"
+url = "https://storage.googleapis.com/jax-releases/jax_cuda_releases.html"
+type = "find-links"
 
 [tool.hatch.metadata]
 allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]

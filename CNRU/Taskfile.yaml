@@ -1,12 +1,15 @@
 version: 3
 
+env:
+  TF_CPP_MIN_LOG_LEVEL: 3
+
 tasks:
-  train:decoder:
+  train:
     cmds:
-      - rye run python src/cli.py train-decoder -c train.toml
+      - rye run python src/cli.py train -c configs/train.toml
   finetune:
     cmds:
-      - rye run python src/cli.py finetune -c finetune.toml
+      - rye run python src/cli.py finetune -c configs/finetune.toml
   reconstruct:
     cmds:
-      - rye run python src/cli.py reconstruct -c reconstruct.toml
+      - rye run python src/cli.py reconstruct -c configs/reconstruct.toml
