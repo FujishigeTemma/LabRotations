@@ -46,7 +46,8 @@ def reconstruct(config: Config):
     checkpointer = ocp.AsyncCheckpointer(ocp.PyTreeCheckpointHandler(use_ocdbt=True))
 
     options = ocp.CheckpointManagerOptions(max_to_keep=5, create=True)
-    checkpoint_manager = ocp.CheckpointManager(os.path.join(config.checkpoint_dir, "vae"), checkpointer, options)
+    checkpoint_dir = os.path.join(config.checkpoint_dir, "vae", config.dataset)
+    checkpoint_manager = ocp.CheckpointManager(checkpoint_dir, checkpointer, options)
 
     best_step = checkpoint_manager.best_step()
     if best_step is None:

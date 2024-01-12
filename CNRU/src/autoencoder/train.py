@@ -87,10 +87,17 @@ def validate_config(ctx, param, value):
 @click.command()
 @click.option("--config", "-c", required=True, type=click.UNPROCESSED, callback=validate_config)
 def train(config: Config):
-    wandb.init(project="Autoencoder_mnist", config=config.__dict__)
+    wandb.init(project="Autoencoder", config=config.__dict__)
 
     rng = random.key(0)
     rng, *rngs = random.split(rng)
+
+    checkpointer = ocp.AsyncCheckpointer(ocp.PyTreeCheckpointHandler(use_ocdbt=True))
+
+    options = ocp.CheckpointManagerOptions(max_to_keep=5, create=True)
+    checkpoint_dir = os.path.join(config.checkpoint_dir, "autoencoder", config.dataset)
+    checkpoint_manager = ocp.CheckpointManager(checkpoint_dir, checkpointer, options)
+
     autoencoder = Autoencoder()
 
     init_rng = {"params": rngs[0]}
@@ -99,9 +106,18 @@ def train(config: Config):
     tabulate_fn = tabulate(autoencoder, init_rng, compute_flops=True, compute_vjp_flops=True)
     print(tabulate_fn(init_data))
 
-    variables = autoencoder.init(init_rng, init_data)
-    params = variables["params"]
-    batch_stats = variables["batch_stats"]
+    best_step = checkpoint_manager.best_step()
+    if best_step is not None:
+        print(f"Restoring from step {best_step}.")
+        checkpoint = checkpoint_manager.restore(best_step)
+        state = checkpoint["state"]
+        params = state["params"]
+        batch_stats = state["batch_stats"]
+    else:
+        print("Initializing TrainState.")
+        variables = autoencoder.init(init_rng, init_data)
+        params = variables["params"]
+        batch_stats = variables["batch_stats"]
 
     state = TrainState.create(apply_fn=autoencoder.apply, params=params, batch_stats=batch_stats, tx=optax.adam(1e-3))
 
@@ -110,15 +126,9 @@ def train(config: Config):
 
     train_ds = input_pipeline.build_train_set(BATCH_SIZE, ds_builder)
 
-    checkpointer = ocp.AsyncCheckpointer(ocp.PyTreeCheckpointHandler(use_ocdbt=True))
-
-    options = ocp.CheckpointManagerOptions(max_to_keep=5, create=True)
-    checkpoint_dir = os.path.join(config.checkpoint_dir, "autoencoder", config.dataset)
-    checkpoint_manager = ocp.CheckpointManager(checkpoint_dir, checkpointer, options)
-
     steps_per_epoch = ds_builder.info.splits[tfds.Split.TRAIN].num_examples // BATCH_SIZE  # type: ignore
 
-    iterator = tqdm.trange(config.n_epochs, desc="Epoch")
+    iterator = tqdm.trange(best_step + 1 if best_step else 0, config.n_epochs, desc="Epoch")
     for epoch in iterator:
         epoch_metrics = {}
 

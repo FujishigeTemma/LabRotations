@@ -58,6 +58,10 @@ class VAE(nn.Module):
 
 
 def reparameterize(rng: random.KeyArray, mean: jax.Array, logvar: jax.Array):
-    std = jnp.exp(0.5 * logvar)
+    logvar_clipped = jnp.clip(logvar, a_min=-10, a_max=10)
+    std = jnp.exp(0.5 * logvar_clipped)
+
     eps = random.normal(rng, logvar.shape)
-    return mean + eps * std
+    eps_clipped = jnp.clip(eps, a_min=-2, a_max=2)
+
+    return mean + eps_clipped * std
