@@ -9,7 +9,7 @@ import tensorflow_datasets as tfds
 import tomllib
 from jax import random
 
-from .model import VAE
+from .model import Autoencoder
 
 
 @dataclass
@@ -41,7 +41,9 @@ def reconstruct(config: Config):
     checkpointer = ocp.AsyncCheckpointer(ocp.PyTreeCheckpointHandler(use_ocdbt=True))
 
     options = ocp.CheckpointManagerOptions(max_to_keep=5, create=True)
-    checkpoint_manager = ocp.CheckpointManager(os.path.join(config.checkpoint_dir, "vae"), checkpointer, options)
+    checkpoint_manager = ocp.CheckpointManager(
+        os.path.join(config.checkpoint_dir, "autoencoder"), checkpointer, options
+    )
 
     best_step = checkpoint_manager.best_step()
     if best_step is None:
@@ -58,7 +60,7 @@ def reconstruct(config: Config):
     test_ds = input_pipeline.build_test_set(N_ROWS * N_ROWS, ds_builder)
     batch = next(test_ds)
 
-    output, (mean, logvar) = VAE().apply(
+    output = Autoencoder().apply(
         {"params": state["params"], "batch_stats": state["batch_stats"]},
         x=batch,
         train=False,

@@ -1,7 +1,5 @@
 import flax.linen as nn
 import jax
-import jax.numpy as jnp
-from jax import random
 
 IMAGE_SIZE = 128
 LAYERS = [32, 64, 128, 256, 512, 1024]
@@ -11,18 +9,16 @@ N_FEATURES = (IMAGE_SIZE // 2 ** len(LAYERS)) ** 2 * LAYERS[-1]
 
 class Encoder(nn.Module):
     @nn.compact
-    def __call__(self, x: jax.Array, train: bool) -> tuple[jax.Array, jax.Array]:
+    def __call__(self, x: jax.Array, train: bool) -> jax.Array:
         for features in LAYERS:
             x = nn.Conv(features, kernel_size=(2, 2), strides=2, use_bias=False)(x)
             x = nn.BatchNorm(use_running_average=not train)(x)
             x = nn.leaky_relu(x)
 
         x = x.reshape((x.shape[0], -1))
+        x = nn.Dense(features=LATENT_DIM)(x)
 
-        mean = nn.Dense(features=LATENT_DIM)(x)
-        logvar = nn.Dense(features=LATENT_DIM)(x)
-
-        return mean, logvar
+        return x
 
 
 class Decoder(nn.Module):
@@ -43,20 +39,12 @@ class Decoder(nn.Module):
         return z
 
 
-class VAE(nn.Module):
+class Autoencoder(nn.Module):
     def setup(self):
         self.encoder = Encoder()
         self.decoder = Decoder()
 
     def __call__(self, x: jax.Array, train: bool = True):
-        mean, logvar = self.encoder(x, train)
-        rng = self.make_rng("reparameterize")
-        z = reparameterize(rng, mean, logvar)
+        z = self.encoder(x, train)
         y = self.decoder(z, train)
-        return y, (mean, logvar)
-
-
-def reparameterize(rng: random.KeyArray, mean: jax.Array, logvar: jax.Array):
-    std = jnp.exp(0.5 * logvar)
-    eps = random.normal(rng, logvar.shape)
-    return mean + eps * std
+        return y

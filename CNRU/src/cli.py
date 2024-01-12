@@ -1,5 +1,6 @@
 import click
-from vae import reconstruct, train
+from autoencoder import autoencoder
+from vae import vae
 
 
 @click.group()
@@ -7,8 +8,8 @@ def cli():
     pass
 
 
-cli.add_command(train)
-cli.add_command(reconstruct)
+cli.add_command(autoencoder)
+cli.add_command(vae)
 
 if __name__ == "__main__":
     cli()

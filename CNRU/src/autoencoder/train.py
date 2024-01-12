@@ -18,11 +18,11 @@ from jax import random
 
 import wandb
 
-from .model import VAE
+from .model import IMAGE_SIZE, Autoencoder
 
 DEVICE_COUNT = jax.local_device_count()
 BATCH_SIZE = 64 * DEVICE_COUNT
-INPUT_SHAPE = (BATCH_SIZE, 128, 128, 1)
+INPUT_SHAPE = (BATCH_SIZE, IMAGE_SIZE, IMAGE_SIZE, 1)
 
 
 class TrainState(train_state.TrainState):
@@ -34,38 +34,26 @@ def mean_squared_error(y: jax.Array, y_target: jax.Array):
     return jnp.square(y - y_target).mean()
 
 
-@jax.vmap
-def kl_divergence(mean: jax.Array, logvar: jax.Array):
-    return -0.5 * jnp.sum(1 + logvar - jnp.square(mean) - jnp.exp(logvar))
-
-
 @jax.jit
 def train_step(rng: random.KeyArray, state: TrainState, batch: jax.Array):
-    rng, subrng = random.split(rng)
-
     def loss_fn(params):
-        (output, (mean, logvar)), updates = VAE().apply(
+        output, updates = Autoencoder().apply(
             {"params": params, "batch_stats": state.batch_stats},
             batch,
-            rngs={"reparameterize": subrng},
             mutable=["batch_stats"],
         )
         mse_loss = mean_squared_error(output, batch).mean()
-        kld_loss = kl_divergence(mean, logvar).mean()  # type: ignore
-        # loss = mse_loss + kld_loss
         loss = mse_loss
-        return loss, (output, mse_loss, kld_loss, updates)
+        return loss, (output, mse_loss, updates)
 
     grad_fn = jax.value_and_grad(loss_fn, has_aux=True)
-    (loss, (output, mse_loss, kld_loss, updates)), grads = grad_fn(state.params)
+    (loss, (output, mse_loss, updates)), grads = grad_fn(state.params)
 
     state = state.apply_gradients(grads=grads)
     state = state.replace(batch_stats=updates["batch_stats"])
 
     metrics = {
         "loss": loss,
-        "mse_loss": mse_loss,
-        "kld_loss": kld_loss,
     }
 
     return state, output, metrics
@@ -95,23 +83,23 @@ def validate_config(ctx, param, value):
 @click.command()
 @click.option("--config", "-c", required=True, type=click.UNPROCESSED, callback=validate_config)
 def train(config: Config):
-    wandb.init(project="VAE_mnist", config=config.__dict__)
+    wandb.init(project="Autoencoder_mnist", config=config.__dict__)
 
     rng = random.key(0)
-    rng, *rngs = random.split(rng, 3)
-    vae = VAE()
+    rng, *rngs = random.split(rng)
+    autoencoder = Autoencoder()
 
-    init_rng = {"params": rngs[0], "reparameterize": rngs[1]}
+    init_rng = {"params": rngs[0]}
     init_data = jnp.ones(INPUT_SHAPE, jnp.float32)
 
-    tabulate_fn = tabulate(vae, init_rng, compute_flops=True, compute_vjp_flops=True)
+    tabulate_fn = tabulate(autoencoder, init_rng, compute_flops=True, compute_vjp_flops=True)
     print(tabulate_fn(init_data))
 
-    variables = vae.init(init_rng, init_data)
+    variables = autoencoder.init(init_rng, init_data)
     params = variables["params"]
     batch_stats = variables["batch_stats"]
 
-    state = TrainState.create(apply_fn=vae.apply, params=params, batch_stats=batch_stats, tx=optax.adam(1e-3))
+    state = TrainState.create(apply_fn=autoencoder.apply, params=params, batch_stats=batch_stats, tx=optax.adam(1e-3))
 
     ds_builder = tfds.builder("mnist")
     ds_builder.download_and_prepare()
@@ -121,7 +109,9 @@ def train(config: Config):
     checkpointer = ocp.AsyncCheckpointer(ocp.PyTreeCheckpointHandler(use_ocdbt=True))
 
     options = ocp.CheckpointManagerOptions(max_to_keep=5, create=True)
-    checkpoint_manager = ocp.CheckpointManager(os.path.join(config.checkpoint_dir, "vae"), checkpointer, options)
+    checkpoint_manager = ocp.CheckpointManager(
+        os.path.join(config.checkpoint_dir, "autoencoder"), checkpointer, options
+    )
 
     steps_per_epoch = ds_builder.info.splits[tfds.Split.TRAIN].num_examples // BATCH_SIZE  # type: ignore
 

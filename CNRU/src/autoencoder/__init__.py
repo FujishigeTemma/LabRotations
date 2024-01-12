@@ -6,9 +6,9 @@ from .train import train
 
 
 @click.group()
-def vae():
+def autoencoder():
     pass
 
 
-vae.add_command(train)
-vae.add_command(reconstruct)
+autoencoder.add_command(train)
+autoencoder.add_command(reconstruct)

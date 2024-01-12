@@ -4,12 +4,15 @@ env:
   TF_CPP_MIN_LOG_LEVEL: 3
 
 tasks:
-  train:
+  ae:train:
     cmds:
-      - rye run python src/cli.py train -c configs/train.toml
-  finetune:
+      - rye run python src/cli.py autoencoder train -c configs/train.toml
+  ae:reconstruct:
     cmds:
-      - rye run python src/cli.py finetune -c configs/finetune.toml
-  reconstruct:
+      - rye run python src/cli.py autoencoder reconstruct -c configs/reconstruct.toml
+  vae:train:
     cmds:
-      - rye run python src/cli.py reconstruct -c configs/reconstruct.toml
+      - rye run python src/cli.py vae train -c configs/train.toml
+  vae:reconstruct:
+    cmds:
+      - rye run python src/cli.py vae reconstruct -c configs/reconstruct.toml
