@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass
+from typing import Literal
 
 import click
 import input_pipeline
@@ -14,6 +15,7 @@ from .model import Autoencoder
 
 @dataclass
 class Config:
+    dataset: Literal["mnist", "cifar100", "imagenet2012"]
     checkpoint_dir: str
     output_dir: str
 
@@ -23,6 +25,9 @@ def validate_config(ctx, param, value):
         raise click.BadParameter(f"Config file {value} does not exist.")
     with open(value, "rb") as f:
         config = tomllib.load(f)
+
+    if config["dataset"] not in ["mnist", "cifar100", "imagenet2012"]:
+        raise click.BadParameter(f"Dataset {config['dataset']} is not supported.")
 
     for key in Config.__annotations__.keys():
         if key not in config:
@@ -41,9 +46,8 @@ def reconstruct(config: Config):
     checkpointer = ocp.AsyncCheckpointer(ocp.PyTreeCheckpointHandler(use_ocdbt=True))
 
     options = ocp.CheckpointManagerOptions(max_to_keep=5, create=True)
-    checkpoint_manager = ocp.CheckpointManager(
-        os.path.join(config.checkpoint_dir, "autoencoder"), checkpointer, options
-    )
+    checkpoint_dir = os.path.join(config.checkpoint_dir, "autoencoder", config.dataset)
+    checkpoint_manager = ocp.CheckpointManager(checkpoint_dir, checkpointer, options)
 
     best_step = checkpoint_manager.best_step()
     if best_step is None:
@@ -52,7 +56,7 @@ def reconstruct(config: Config):
 
     state = checkpoint["state"]
 
-    ds_builder = tfds.builder("mnist")
+    ds_builder = tfds.builder(config.dataset)
     ds_builder.download_and_prepare()
 
     N_ROWS = 5
@@ -70,11 +74,12 @@ def reconstruct(config: Config):
     fig, axes = plt.subplots(N_ROWS, N_ROWS * 2)
     for i in range(N_ROWS):
         for j in range(N_ROWS):
-            axes[i][j * 2].imshow(batch[i * N_ROWS + j], cmap="gray")
-            axes[i][j * 2 + 1].imshow(output[i * N_ROWS + j], cmap="gray")
+            axes[i][j * 2].imshow(batch[i * N_ROWS + j])
+            axes[i][j * 2 + 1].imshow(output[i * N_ROWS + j])
 
             axes[i][j * 2].axis("off")
             axes[i][j * 2 + 1].axis("off")
 
     fig.tight_layout()
-    fig.savefig(os.path.join(config.output_dir, "reconstruction.png"))
+    output_dir = os.path.join(config.output_dir, "autoencoder", config.dataset, f"reconstruct_{best_step}.png")
+    fig.savefig(output_dir)

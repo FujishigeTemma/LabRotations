@@ -4,6 +4,7 @@ import jax.numpy as jnp
 from jax import random
 
 IMAGE_SIZE = 128
+N_CHANNELS = 3
 LAYERS = [32, 64, 128, 256, 512, 1024]
 LATENT_DIM = 200
 N_FEATURES = (IMAGE_SIZE // 2 ** len(LAYERS)) ** 2 * LAYERS[-1]
@@ -37,7 +38,7 @@ class Decoder(nn.Module):
             z = nn.BatchNorm(use_running_average=not train)(z)
             z = nn.leaky_relu(z)
 
-        z = nn.ConvTranspose(1, kernel_size=(2, 2), strides=(2, 2))(z)
+        z = nn.ConvTranspose(N_CHANNELS, kernel_size=(2, 2), strides=(2, 2))(z)
         z = nn.sigmoid(z)
 
         return z

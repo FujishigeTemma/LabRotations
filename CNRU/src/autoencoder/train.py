@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 import click
 import input_pipeline
@@ -22,7 +22,7 @@ from .model import IMAGE_SIZE, Autoencoder
 
 DEVICE_COUNT = jax.local_device_count()
 BATCH_SIZE = 64 * DEVICE_COUNT
-INPUT_SHAPE = (BATCH_SIZE, IMAGE_SIZE, IMAGE_SIZE, 1)
+INPUT_SHAPE = (BATCH_SIZE, IMAGE_SIZE, IMAGE_SIZE, 3)
 
 
 class TrainState(train_state.TrainState):
@@ -61,6 +61,7 @@ def train_step(rng: random.KeyArray, state: TrainState, batch: jax.Array):
 
 @dataclass
 class Config:
+    dataset: Literal["mnist", "cifar100", "imagenet2012"]
     n_epochs: int
     checkpoint_dir: str
 
@@ -70,6 +71,9 @@ def validate_config(ctx, param, value):
         raise click.BadParameter(f"Config file {value} does not exist.")
     with open(value, "rb") as f:
         config = tomllib.load(f)
+
+    if config["dataset"] not in ["mnist", "cifar100", "imagenet2012"]:
+        raise click.BadParameter(f"Dataset {config['dataset']} is not supported.")
 
     for key in Config.__annotations__.keys():
         if key not in config:
@@ -101,7 +105,7 @@ def train(config: Config):
 
     state = TrainState.create(apply_fn=autoencoder.apply, params=params, batch_stats=batch_stats, tx=optax.adam(1e-3))
 
-    ds_builder = tfds.builder("mnist")
+    ds_builder = tfds.builder(config.dataset)
     ds_builder.download_and_prepare()
 
     train_ds = input_pipeline.build_train_set(BATCH_SIZE, ds_builder)
@@ -109,9 +113,8 @@ def train(config: Config):
     checkpointer = ocp.AsyncCheckpointer(ocp.PyTreeCheckpointHandler(use_ocdbt=True))
 
     options = ocp.CheckpointManagerOptions(max_to_keep=5, create=True)
-    checkpoint_manager = ocp.CheckpointManager(
-        os.path.join(config.checkpoint_dir, "autoencoder"), checkpointer, options
-    )
+    checkpoint_dir = os.path.join(config.checkpoint_dir, "autoencoder", config.dataset)
+    checkpoint_manager = ocp.CheckpointManager(checkpoint_dir, checkpointer, options)
 
     steps_per_epoch = ds_builder.info.splits[tfds.Split.TRAIN].num_examples // BATCH_SIZE  # type: ignore
 
@@ -127,11 +130,11 @@ def train(config: Config):
             epoch_metrics = {key: epoch_metrics.get(key, 0.0) + value for key, value in metrics.items()}
 
             if step == steps_per_epoch - 1:
-                wandb.log({"input": wandb.Image(np.array(batch[0] * 255.0), mode="L")})
-                wandb.log({"output": wandb.Image(np.array(output[0] * 255.0), mode="L")})
+                wandb.log({"input": wandb.Image(np.array(batch[0] * 255.0))}, step=epoch)
+                wandb.log({"output": wandb.Image(np.array(output[0] * 255.0))}, step=epoch)
 
         epoch_metrics = {key: value / steps_per_epoch for key, value in epoch_metrics.items()}
-        wandb.log(epoch_metrics)
+        wandb.log(epoch_metrics, step=epoch)
         iterator.set_postfix(loss=epoch_metrics["loss"])
 
         checkpoint = {"state": state}
