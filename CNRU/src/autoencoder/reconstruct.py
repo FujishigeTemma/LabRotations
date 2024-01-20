@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import orbax.checkpoint as ocp
 import tensorflow_datasets as tfds
 import tomllib
+from datasets.egoal.egoal_dataset_builder import Builder
 from jax import random
 
 from .model import Autoencoder
@@ -15,7 +16,8 @@ from .model import Autoencoder
 
 @dataclass
 class Config:
-    dataset: Literal["mnist", "cifar100", "imagenet2012"]
+    dataset: Literal["mnist", "cifar100", "imagenet2012", "egoal"]
+    data_dir: str
     checkpoint_dir: str
     output_dir: str
 
@@ -26,7 +28,7 @@ def validate_config(ctx, param, value):
     with open(value, "rb") as f:
         config = tomllib.load(f)
 
-    if config["dataset"] not in ["mnist", "cifar100", "imagenet2012"]:
+    if config["dataset"] not in ["mnist", "cifar100", "imagenet2012", "egoal"]:
         raise click.BadParameter(f"Dataset {config['dataset']} is not supported.")
 
     for key in Config.__annotations__.keys():
@@ -46,7 +48,8 @@ def reconstruct(config: Config):
     checkpointer = ocp.AsyncCheckpointer(ocp.PyTreeCheckpointHandler(use_ocdbt=True))
 
     options = ocp.CheckpointManagerOptions(max_to_keep=5, create=True)
-    checkpoint_dir = os.path.join(config.checkpoint_dir, "autoencoder", config.dataset)
+    # checkpoint_dir = os.path.join(config.checkpoint_dir, "autoencoder", config.dataset)
+    checkpoint_dir = os.path.join(config.checkpoint_dir, "autoencoder", "cifar100")
     checkpoint_manager = ocp.CheckpointManager(checkpoint_dir, checkpointer, options)
 
     best_step = checkpoint_manager.best_step()
@@ -56,8 +59,13 @@ def reconstruct(config: Config):
 
     state = checkpoint["state"]
 
-    ds_builder = tfds.builder(config.dataset)
-    ds_builder.download_and_prepare()
+    if config.dataset == "egoal":
+        download_config = tfds.download.DownloadConfig(manual_dir=config.data_dir)
+        ds_builder = Builder()
+        ds_builder.download_and_prepare(download_config=download_config)
+    else:
+        ds_builder = tfds.builder(config.dataset)
+        ds_builder.download_and_prepare()
 
     N_ROWS = 5
 

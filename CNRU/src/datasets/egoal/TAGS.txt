@@ -1,0 +1,5 @@
+// {info.todo}: remove tags which do not apply to dataset.
+content.data-type.time-series # Contains time-series data.
+content.data-type.video # Contains video data.
+ml.task.image-compression # Relates to Image Compression, a machine learning task.
+ml.task.image-generation # Relates to Image Generation, a machine learning task.
