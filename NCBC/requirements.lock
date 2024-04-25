@@ -5,22 +5,52 @@
 #   pre: false
 #   features: []
 #   all-features: false
+#   with-sources: false
 
 -e file:.
-click==8.1.6
+click==8.1.7
+    # via ncbc
 contourpy==1.1.0
+    # via matplotlib
 cycler==0.11.0
+    # via matplotlib
+find-libpython==0.4.0
+    # via neuron
 fonttools==4.42.0
-h5py==3.9.0
+    # via matplotlib
+h5py==3.11.0
+    # via ncbc
 kiwisolver==1.4.4
-matplotlib==3.7.2
-neuron==8.2.2
-numpy==1.25.2
+    # via matplotlib
+matplotlib==3.8.4
+    # via ncbc
+neuron==8.2.4
+    # via ncbc
+numpy==1.26.4
+    # via contourpy
+    # via h5py
+    # via matplotlib
+    # via ncbc
+    # via neuron
+    # via scipy
 packaging==23.1
+    # via matplotlib
+    # via neuron
 pillow==10.0.0
+    # via matplotlib
 pyparsing==3.0.9
+    # via matplotlib
 python-dateutil==2.8.2
-scipy==1.11.1
+    # via matplotlib
+scipy==1.13.0
+    # via ncbc
+setuptools==69.5.1
+    # via neuron
 six==1.16.0
-typeid-python==0.2.1
+    # via python-dateutil
+tqdm==4.66.2
+    # via ncbc
+typeid-python==0.3.0
+    # via ncbc
 uuid6==2023.5.2
+    # via typeid-python

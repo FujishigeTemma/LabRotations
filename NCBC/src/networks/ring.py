@@ -8,19 +8,19 @@ from .population import NetConParams, Population, TmgSynParams, connect, connect
 class Ring(Network):
     name = "Ring"
 
-    def __init__(self, with_gap_junctions=False):
-        self.BCs = Population(index=1, cell_type=BasketCell, n_cells=200)
+    def __init__(self, n_cells: int, connectivity: float, with_gap_junctions=False):
+        self.BCs = Population(index=1, cell_type=BasketCell, n_cells=n_cells)
 
         self.populations = [self.BCs]
 
         # BC -> BC
         tmgsyn_params = TmgSynParams(tau_1=1.8, tau_facilition=0, tau_recovery=0, U=1, e=-70)
         netcon_params = NetConParams(threshold=10, delay=0.8, weight=7.6e-3)
-        self.BC_TO_BC = connect(
+        self.BC_TO_BC, self.A = connect(
             pre_population=self.BCs,
             post_population=self.BCs,
-            n_candidates=100,
-            n_synapses=100,
+            n_candidates=int(n_cells * connectivity),
+            n_synapses=int(n_cells * connectivity),
             target_section_name="proxd",
             tmgsyn_params=tmgsyn_params,
             netcon_params=netcon_params,

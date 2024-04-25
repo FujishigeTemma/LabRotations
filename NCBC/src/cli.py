@@ -1,5 +1,4 @@
 import click
-
 from dentate_gyrus import analyze_dentate_gyrus, simulate_dentate_gyrus
 from gap_junction import simulate_EPSP_propagation, simulate_gap_junction
 from intirinsic_properties import analyze_intrinsic_properties

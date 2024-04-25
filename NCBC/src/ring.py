@@ -2,15 +2,16 @@ import os
 
 import click
 import h5py as h5
+import matplotlib
+import matplotlib.pyplot
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy.fft import fft, fftfreq, fftshift
-from typeid import TypeID, from_string
-
 import simulator
 from networks import Ring
+from numpy.fft import fft, fftfreq, fftshift
 from recorders import DB, ActionPotentialRecorder, VoltageRecorder
 from spikes import homogeneous_poisson_process, inhomogeneous_poisson_process
+from typeid import TypeID, from_string
 
 
 def set_job_id(ctx, param, value):
@@ -30,12 +31,18 @@ def set_job_id(ctx, param, value):
     "--stimuli", default="inhomogeneous_poisson_process", type=click.Choice(["homogeneous_poisson_process", "inhomogeneous_poisson_process"]), help="Type of stimuli to evoke."
 )
 @click.option("-f", "--frequency", default=10, type=int, help="Frequency of the stimuli.")
+@click.option("--n-cells", default=200, type=int, help="Number of cells in the ring.")
+@click.option("--connectivity", default=0.3, type=float, help="Connectivity of the ring.")
 @click.option("--with-gap-junctions", is_flag=True, help="Include gap junctions.")
 @click.option("-o", "--output", default="outputs", type=click.Path(exists=True), help="Path to output directory.")
-def simulate_ring(job_id: TypeID, seed: int, with_gap_junctions: bool, stimuli: str, frequency: int, output: str):
+def simulate_ring(job_id: TypeID, seed: int, n_cells: int, connectivity: float, with_gap_junctions: bool, stimuli: str, frequency: int, output: str):
+    return _simulate_ring(job_id, seed, n_cells, connectivity, with_gap_junctions, stimuli, frequency, output)
+
+
+def _simulate_ring(job_id: TypeID, seed: int, n_cells: int, connectivity: float, with_gap_junctions: bool, stimuli: str, frequency: int, output: str):
     simulator.setup(seed=seed)
 
-    RING = Ring(with_gap_junctions=with_gap_junctions)
+    RING = Ring(n_cells, connectivity, with_gap_junctions=with_gap_junctions)
 
     n_cells = len(RING.BCs.cells)
 
@@ -80,6 +87,13 @@ def simulate_ring(job_id: TypeID, seed: int, with_gap_junctions: bool, stimuli: 
         )
         dataset[:] = temporal_patterns
 
+        dataset = f.require_dataset(
+            "A",
+            shape=RING.A.shape,
+            dtype=RING.A.dtype,
+        )
+        dataset[:] = RING.A
+
     for i in range(n_cells):
         spatial_pattern = [i]
         RING.evoke_BC(temporal_patterns[i].tolist(), spatial_pattern, weight=0.01)
@@ -102,12 +116,16 @@ def simulate_ring(job_id: TypeID, seed: int, with_gap_junctions: bool, stimuli: 
         row = {
             "id": str(job_id),
             "seed": seed,
+            "n_cells": n_cells,
+            "connectivity": connectivity,
             "with_gap_junctions": with_gap_junctions,
             "stimuli": stimuli,
             "frequency": frequency,
         }
 
         db.insert("jobs", row)
+
+    matplotlib.pyplot.close("all")
 
 
 @click.command()

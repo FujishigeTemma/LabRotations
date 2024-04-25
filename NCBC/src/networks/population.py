@@ -1,9 +1,8 @@
 from dataclasses import dataclass
 
 import numpy as np
-from neuron import h
-
 from cells import Cell
+from neuron import h
 
 
 class Population:
@@ -75,11 +74,14 @@ class Connection:
 
 def connect(
     pre_population: Population, post_population: Population, n_candidates: int, n_synapses: int, target_section_name: str, tmgsyn_params: TmgSynParams, netcon_params: NetConParams
-) -> list[Connection]:
+) -> tuple[list[Connection], np.ndarray]:
     if n_candidates > len(post_population.cells):
         raise ValueError("n_candidate must be smaller than or equal to the number of cells in post_population")
     if n_synapses > n_candidates:
         raise ValueError("n_synapse must be smaller than or equal to n_candidate")
+
+    # record adjacent matrix
+    A = np.zeros((len(pre_population.cells), len(post_population.cells)), dtype=np.int32)
 
     each_nearest_points = find_nearest_points(len(pre_population.cells), len(post_population.cells), n_candidates)
 
@@ -87,6 +89,8 @@ def connect(
     for pre_cell_index, nearest_points in enumerate(each_nearest_points):
         chosen_cells = np.random.choice(nearest_points, n_synapses, replace=False)
         for post_cell_index in chosen_cells:
+            A[pre_cell_index, post_cell_index] = 1
+
             target_sections = post_population.cells[post_cell_index].get_sections_by_name(target_section_name)
             chosen_section = np.random.choice(target_sections)
 
@@ -105,7 +109,7 @@ def connect(
 
             connections.append(Connection(synapse, netcon))
 
-    return connections
+    return connections, A
 
 
 @dataclass
