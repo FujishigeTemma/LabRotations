@@ -209,7 +209,7 @@ extern void _cvode_abstol( Symbol**, double*, int);
  pnt_receive[_mechtype] = _net_receive;
  pnt_receive_size[_mechtype] = 1;
  	hoc_register_var(hoc_scdoub, hoc_vdoub, hoc_intfunc);
- 	ivoc_help("help ?1 VecStim /Users/temma/ghq/LabRotations/NCBC/src/mechanisms/vecstim.mod\n");
+ 	ivoc_help("help ?1 VecStim /home/t/temma-fujishige/LabRotations/NCBC/src/mechanisms/vecstim.mod\n");
  hoc_register_limits(_mechtype, _hoc_parm_limits);
  hoc_register_units(_mechtype, _hoc_parm_units);
  }
@@ -357,7 +357,7 @@ _first = 0;
 }
 
 #if NMODL_TEXT
-static const char* nmodl_filename = "/Users/temma/ghq/LabRotations/NCBC/src/mechanisms/vecstim.mod";
+static const char* nmodl_filename = "/home/t/temma-fujishige/LabRotations/NCBC/src/mechanisms/vecstim.mod";
 static const char* nmodl_file_text = 
   "NEURON {\n"
   "  ARTIFICIAL_CELL VecStim\n"

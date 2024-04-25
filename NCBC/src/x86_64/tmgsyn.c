@@ -267,7 +267,7 @@ extern void _cvode_abstol( Symbol**, double*, int);
  pnt_receive_init[_mechtype] = _net_init;
  pnt_receive_size[_mechtype] = 5;
  	hoc_register_var(hoc_scdoub, hoc_vdoub, hoc_intfunc);
- 	ivoc_help("help ?1 tmgsyn /Users/temma/ghq/LabRotations/NCBC/src/mechanisms/tmgsyn.mod\n");
+ 	ivoc_help("help ?1 tmgsyn /home/t/temma-fujishige/LabRotations/NCBC/src/mechanisms/tmgsyn.mod\n");
  hoc_register_limits(_mechtype, _hoc_parm_limits);
  hoc_register_units(_mechtype, _hoc_parm_units);
  }
@@ -530,7 +530,7 @@ _first = 0;
 #endif
 
 #if NMODL_TEXT
-static const char* nmodl_filename = "/Users/temma/ghq/LabRotations/NCBC/src/mechanisms/tmgsyn.mod";
+static const char* nmodl_filename = "/home/t/temma-fujishige/LabRotations/NCBC/src/mechanisms/tmgsyn.mod";
 static const char* nmodl_file_text = 
   "COMMENT\n"
   "Revised 12/15/2000 in light of a personal communication \n"

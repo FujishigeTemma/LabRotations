@@ -1,0 +1,4 @@
+dataset_name = "ImageNet"
+data_dir = "/work/TaniU/temma"
+checkpoint_path = "/home/t/temma-fujishige/checkpoints/decoder_50.pth"
+output_dir = "/home/t/temma-fujishige/outputs"
