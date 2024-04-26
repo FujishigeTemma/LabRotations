@@ -40,12 +40,12 @@ tasks:
     dir: src
     vars:
       IDS:
-        sh: echo "SELECT id FROM jobs;" | sqlite3 ../outputs/ring.sqlite
+        sh: echo "SELECT id FROM jobs;" | sqlite3 ../outputs_0_400/ring.sqlite
     cmds:
       - for: { var: IDS, as: ID }
         task: analyze:ring
         vars:
-          CLI_ARGS: --job-id {{ .ID }}
+          CLI_ARGS: --job-id {{ .ID }} -o ../outputs_0_400
   analyze:dentate-gyrus:
     dir: src
     cmds:

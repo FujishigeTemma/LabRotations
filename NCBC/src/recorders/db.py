@@ -14,6 +14,11 @@ class DB:
         cursor.execute(f"INSERT INTO {table} ({columns}) VALUES ({placeholders})", values)
         self.conn.commit()
 
+    def update_density(self, table: str, id: str, low: float, mid: float, high: float):
+        cursor = self.conn.cursor()
+        cursor.execute(f"UPDATE {table} SET low = ?, mid = ?, high = ? WHERE id = ?", (low, mid, high, id))
+        self.conn.commit()
+
     def list(self, table: str):
         cursor = self.conn.cursor()
         cursor.execute(f"SELECT * FROM {table}")

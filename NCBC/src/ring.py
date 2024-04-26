@@ -2,8 +2,6 @@ import os
 
 import click
 import h5py as h5
-import matplotlib
-import matplotlib.pyplot
 import matplotlib.pyplot as plt
 import numpy as np
 import simulator
@@ -125,7 +123,7 @@ def _simulate_ring(job_id: TypeID, seed: int, n_cells: int, connectivity: float,
 
         db.insert("jobs", row)
 
-    matplotlib.pyplot.close("all")
+    plt.close("all")
 
 
 @click.command()
@@ -179,3 +177,5 @@ def analyze_ring(job_id: TypeID, output: str):
 
         fig1.tight_layout()
         fig1.savefig(os.path.join(output, str(job_id), "activity.png"))
+
+    plt.close("all")

@@ -4,5 +4,5 @@ __pycache__
 
 .idea
 outputs/job_*
-src/outputs/job_*
-outputs_0_400
+_outputs
+_outputs_0_400

@@ -242,7 +242,7 @@ extern void _cvode_abstol( Symbol**, double*, int);
   hoc_register_dparam_semantics(_mechtype, 2, "nca_ion");
  	hoc_register_cvode(_mechtype, _ode_count, 0, 0, 0);
  	hoc_register_var(hoc_scdoub, hoc_vdoub, hoc_intfunc);
- 	ivoc_help("help ?1 nca /home/t/temma-fujishige/LabRotations/NCBC/src/mechanisms/nca.mod\n");
+ 	ivoc_help("help ?1 nca /Users/temma/ghq/LabRotations/NCBC/src/mechanisms/nca.mod\n");
  hoc_register_limits(_mechtype, _hoc_parm_limits);
  hoc_register_units(_mechtype, _hoc_parm_units);
  }
@@ -494,7 +494,7 @@ _first = 0;
 #endif
 
 #if NMODL_TEXT
-static const char* nmodl_filename = "/home/t/temma-fujishige/LabRotations/NCBC/src/mechanisms/nca.mod";
+static const char* nmodl_filename = "/Users/temma/ghq/LabRotations/NCBC/src/mechanisms/nca.mod";
 static const char* nmodl_file_text = 
   "TITLE nca.mod  \n"
   "\n"

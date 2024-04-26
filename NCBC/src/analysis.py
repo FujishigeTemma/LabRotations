@@ -1,6 +1,13 @@
+import os
+
 import h5py as h5
+import matplotlib.pyplot as plt
 import numpy as np
+from recorders.db import DB
 from scipy.signal import correlate, welch
+
+dt = 0.1
+fs = 1000 / dt
 
 
 def preprocess(data, fs, max_time):
@@ -17,7 +24,16 @@ def preprocess(data, fs, max_time):
     return binary_data
 
 
-def analyze(binary_data, fs):
+def analyze(output, job_id):
+    f = h5.File(os.path.join(output, job_id, "ring.h5"), "r")
+    data = f["action_potentials/Population(BasketCell)#1"]
+    assert isinstance(data, h5.Dataset)
+
+    data = [spikes for spikes in data if len(spikes) > 0]
+
+    max_time = int(np.ceil(np.max([np.max(spikes) for spikes in data]) * fs / 1000))
+    binary_data = preprocess(data, fs, max_time)
+
     N = len(binary_data)
     autocorr_list = []
     psd_list = []
@@ -47,34 +63,40 @@ def analyze(binary_data, fs):
     mean_psd = np.mean(psd_padded, axis=0)
     mean_freq = freq_list[0][:max_freq_len]  # 周波数軸は全て同じ
 
-    return mean_autocorr, mean_freq, mean_psd
+    # 周波数の最大値を1000Hzに設定
+    max_freq = 1000
+    freq_indices = np.where(mean_freq <= max_freq)[0]
+    mean_freq = mean_freq[freq_indices]
+    mean_psd = mean_psd[freq_indices]
 
+    # 0-20Hz, 20-100Hz, 100-300Hzの区間での密度の最大値を求める
+    freq_ranges = [(0, 20), (20, 100), (100, 300)]
+    max_psd_values = []
 
-f = h5.File("outputs/job_01hwb3r8vqfzqb0ks9dzmzft9a/ring.h5", "r")
-data = f["action_potentials/Population(BasketCell)#1"]
-assert isinstance(data, h5.Dataset)
+    for fmin, fmax in freq_ranges:
+        freq_indices = np.where((mean_freq >= fmin) & (mean_freq <= fmax))[0]
+        max_psd = np.max(mean_psd[freq_indices])
+        max_psd_values.append(max_psd)
 
-# 使用例
-dt = 0.1
-fs = 1000 / dt
-max_time = int(np.ceil(np.max([np.max(spikes) for spikes in data]) * fs / 1000))
-binary_data = preprocess(data, fs, max_time)
-mean_autocorr, mean_freq, mean_psd = analyze(binary_data, int(fs))
+    plt.figure(figsize=(10, 4))
+    plt.subplot(1, 2, 1)
+    plt.plot(np.arange(len(mean_autocorr)) / fs, mean_autocorr)
+    plt.xlabel("Time lag (s)")
+    plt.ylabel("Auto-correlation")
+    plt.title("Mean Auto-correlation")
 
-# 結果の可視化
-import matplotlib.pyplot as plt
+    plt.subplot(1, 2, 2)
+    plt.plot(mean_freq, mean_psd)
+    for freq in [20, 100, 300]:
+        plt.axvline(x=freq, color="red", linestyle="--", linewidth=1)
 
-plt.figure(figsize=(10, 4))
-plt.subplot(1, 2, 1)
-plt.plot(np.arange(len(mean_autocorr)) / fs, mean_autocorr)
-plt.xlabel("Time lag (s)")
-plt.ylabel("Auto-correlation")
-plt.title("Mean Auto-correlation")
+    plt.xlabel("Frequency (Hz)")
+    plt.ylabel("Power Spectral Density")
+    plt.title("Mean Power Spectral Density")
+    plt.tight_layout()
+    plt.savefig(os.path.join(output, job_id, "analysis.png"))
 
-plt.subplot(1, 2, 2)
-plt.plot(mean_freq, mean_psd)
-plt.xlabel("Frequency (Hz)")
-plt.ylabel("Power Spectral Density")
-plt.title("Mean Power Spectral Density")
-plt.tight_layout()
-plt.show()
+    with DB(os.path.join(output, "ring.sqlite")) as db:
+        db.update_density("jobs", job_id, *max_psd_values)
+
+    return plt.close("all")

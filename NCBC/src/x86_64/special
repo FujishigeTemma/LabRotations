@@ -1,4 +1,4 @@
-#!/home/t/temma-fujishige/LabRotations/NCBC/.venv/bin/python
+#!/Users/temma/ghq/LabRotations/NCBC/.venv/bin/python
 """
 A generic wrapper to access nrn binaries from a python installation
 Please create a softlink with the binary name to be called.
