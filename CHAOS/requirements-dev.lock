@@ -4,10 +4,12 @@
 # last locked with the following flags:
 #   pre: false
 #   features: []
-#   all-features: false
+#   all-features: true
 #   with-sources: false
+#   generate-hashes: false
 
--e file:.
+-e file:libs/edm
+-e file:libs/generate
 appnope==0.1.4
     # via ipykernel
 asttokens==2.4.1
@@ -44,6 +46,8 @@ ipywidgets==8.1.2
     # via ipympl
 jedi==0.19.1
     # via ipython
+joblib==1.4.2
+    # via scikit-learn
 jsonschema==4.22.0
     # via nbformat
 jsonschema-specifications==2023.12.1
@@ -56,32 +60,35 @@ jupyter-core==5.7.2
     # via nbformat
 jupyterlab-widgets==3.0.10
     # via ipywidgets
+kaleido==0.2.1
 kiwisolver==1.4.5
     # via matplotlib
 matplotlib==3.8.4
-    # via chaos
     # via ipympl
     # via pyedm
 matplotlib-inline==0.1.7
     # via ipykernel
     # via ipython
 nbformat==5.10.4
-    # via chaos
 nest-asyncio==1.6.0
     # via ipykernel
-numpy==1.26.4
-    # via chaos
+numpy==2.0.0
     # via contourpy
+    # via edm
+    # via generate
     # via ipympl
     # via matplotlib
     # via pandas
+    # via pyarrow
+    # via pyedm
+    # via scikit-learn
     # via scipy
+    # via tinygrad
 packaging==24.0
     # via ipykernel
     # via matplotlib
     # via plotly
 pandas==2.2.2
-    # via chaos
     # via pyedm
 parso==0.8.4
     # via jedi
@@ -94,7 +101,7 @@ pip==24.0
 platformdirs==4.2.1
     # via jupyter-core
 plotly==5.22.0
-    # via chaos
+polars==0.20.30
 prompt-toolkit==3.0.43
     # via ipython
 psutil==5.9.8
@@ -103,12 +110,21 @@ ptyprocess==0.7.0
     # via pexpect
 pure-eval==0.2.2
     # via stack-data
-pybind11==2.12.0
-    # via pyedm
-pyedm==1.15.4.0
-    # via chaos
+pyarrow==16.1.0
+pyedm==2.0.1
 pygments==2.18.0
     # via ipython
+pyobjc-core==10.3
+    # via pyobjc-framework-cocoa
+    # via pyobjc-framework-libdispatch
+    # via pyobjc-framework-metal
+pyobjc-framework-cocoa==10.3
+    # via pyobjc-framework-libdispatch
+    # via pyobjc-framework-metal
+pyobjc-framework-libdispatch==10.3
+    # via tinygrad
+pyobjc-framework-metal==10.3
+    # via tinygrad
 pyparsing==3.1.2
     # via matplotlib
 python-dateutil==2.9.0.post0
@@ -127,8 +143,11 @@ rpds-py==0.18.1
     # via jsonschema
     # via referencing
 ruff==0.4.4
-scipy==1.13.0
+scikit-learn==1.5.0
     # via pyedm
+scipy==1.13.1
+    # via pyedm
+    # via scikit-learn
 setuptools==69.5.1
 six==1.16.0
     # via asttokens
@@ -137,9 +156,15 @@ stack-data==0.6.3
     # via ipython
 tenacity==8.3.0
     # via plotly
+threadpoolctl==3.5.0
+    # via scikit-learn
+tinygrad==0.9.0
+    # via edm
 tornado==6.4
     # via ipykernel
     # via jupyter-client
+tqdm==4.66.4
+    # via tinygrad
 traitlets==5.14.3
     # via comm
     # via ipykernel
