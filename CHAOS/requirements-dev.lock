@@ -34,6 +34,8 @@ fastjsonschema==2.19.1
     # via nbformat
 fonttools==4.51.0
     # via matplotlib
+iniconfig==2.0.0
+    # via pytest
 ipykernel==6.29.4
 ipympl==0.9.4
 ipython==8.24.0
@@ -47,6 +49,7 @@ ipywidgets==8.1.2
 jedi==0.19.1
     # via ipython
 joblib==1.4.2
+    # via pynndescent
     # via scikit-learn
 jsonschema==4.22.0
     # via nbformat
@@ -63,6 +66,9 @@ jupyterlab-widgets==3.0.10
 kaleido==0.2.1
 kiwisolver==1.4.5
     # via matplotlib
+llvmlite==0.43.0
+    # via numba
+    # via pynndescent
 matplotlib==3.8.4
     # via ipympl
     # via pyedm
@@ -72,22 +78,28 @@ matplotlib-inline==0.1.7
 nbformat==5.10.4
 nest-asyncio==1.6.0
     # via ipykernel
+numba==0.60.0
+    # via pynndescent
+    # via umap-learn
 numpy==2.0.0
     # via contourpy
     # via edm
     # via generate
     # via ipympl
     # via matplotlib
+    # via numba
     # via pandas
     # via pyarrow
     # via pyedm
     # via scikit-learn
     # via scipy
     # via tinygrad
+    # via umap-learn
 packaging==24.0
     # via ipykernel
     # via matplotlib
     # via plotly
+    # via pytest
 pandas==2.2.2
     # via pyedm
 parso==0.8.4
@@ -101,6 +113,8 @@ pip==24.0
 platformdirs==4.2.1
     # via jupyter-core
 plotly==5.22.0
+pluggy==1.5.0
+    # via pytest
 polars==0.20.30
 prompt-toolkit==3.0.43
     # via ipython
@@ -114,6 +128,8 @@ pyarrow==16.1.0
 pyedm==2.0.1
 pygments==2.18.0
     # via ipython
+pynndescent==0.5.13
+    # via umap-learn
 pyobjc-core==10.3
     # via pyobjc-framework-cocoa
     # via pyobjc-framework-libdispatch
@@ -127,6 +143,7 @@ pyobjc-framework-metal==10.3
     # via tinygrad
 pyparsing==3.1.2
     # via matplotlib
+pytest==8.2.2
 python-dateutil==2.9.0.post0
     # via jupyter-client
     # via matplotlib
@@ -145,9 +162,13 @@ rpds-py==0.18.1
 ruff==0.4.4
 scikit-learn==1.5.0
     # via pyedm
+    # via pynndescent
+    # via umap-learn
 scipy==1.13.1
     # via pyedm
+    # via pynndescent
     # via scikit-learn
+    # via umap-learn
 setuptools==69.5.1
 six==1.16.0
     # via asttokens
@@ -165,6 +186,7 @@ tornado==6.4
     # via jupyter-client
 tqdm==4.66.4
     # via tinygrad
+    # via umap-learn
 traitlets==5.14.3
     # via comm
     # via ipykernel
@@ -177,6 +199,7 @@ traitlets==5.14.3
     # via nbformat
 tzdata==2024.1
     # via pandas
+umap-learn==0.5.6
 wcwidth==0.2.13
     # via prompt-toolkit
 widgetsnbextension==4.0.10

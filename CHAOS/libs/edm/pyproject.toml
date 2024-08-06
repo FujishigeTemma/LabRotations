@@ -2,9 +2,7 @@
 name = "edm"
 version = "0.1.0"
 description = "Add your description here"
-authors = [
-    { name = "FUJISHIGE TEMMA", email = "tenma.x0@gmail.com" }
-]
+authors = [{ name = "FUJISHIGE TEMMA", email = "tenma.x0@gmail.com" }]
 dependencies = [
     "numpy>=2.0.0",
     "tinygrad>=0.9.0",
@@ -18,7 +16,9 @@ build-backend = "hatchling.build"
 
 [tool.rye]
 managed = true
-dev-dependencies = []
+dev-dependencies = [
+    "pytest>=8.2.2",
+]
 
 [tool.hatch.metadata]
 allow-direct-references = true

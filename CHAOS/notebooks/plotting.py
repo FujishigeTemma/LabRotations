@@ -39,7 +39,7 @@ def plot_distributions(df1: pl.DataFrame, df2: pl.DataFrame):
         title="Expression level distribution",
         xaxis=dict(title="expression level"),
         yaxis=dict(title="frequency"),
-        barmode="overlay",
+        # barmode="overlay",
     )
 
     data = [
@@ -307,10 +307,18 @@ def plot_rho_E_tau(
         rho = np.array(rho)
 
         fig.add_trace(
-            go.Surface(x=E, y=tau, z=rho, scene=f"scene{i+1}", showscale=False),
+            go.Surface(
+                x=E,
+                y=tau,
+                z=rho,
+                scene=f"scene{i+1}",
+                showscale=False,
+                hovertemplate="E: %{x}<br>tau: %{y}<br>rho: %{z}",
+            ),
             row=1,
             col=i + 1,
         )
+
     fig.update_scenes(
         xaxis_title_text="E",
         yaxis_title_text="tau",

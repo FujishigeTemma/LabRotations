@@ -22,6 +22,7 @@ fastjsonschema==2.19.1
 fonttools==4.51.0
     # via matplotlib
 joblib==1.4.2
+    # via pynndescent
     # via scikit-learn
 jsonschema==4.22.0
     # via nbformat
@@ -32,20 +33,28 @@ jupyter-core==5.7.2
 kaleido==0.2.1
 kiwisolver==1.4.5
     # via matplotlib
+llvmlite==0.43.0
+    # via numba
+    # via pynndescent
 matplotlib==3.8.4
     # via pyedm
 nbformat==5.10.4
+numba==0.60.0
+    # via pynndescent
+    # via umap-learn
 numpy==2.0.0
     # via contourpy
     # via edm
     # via generate
     # via matplotlib
+    # via numba
     # via pandas
     # via pyarrow
     # via pyedm
     # via scikit-learn
     # via scipy
     # via tinygrad
+    # via umap-learn
 packaging==24.0
     # via matplotlib
     # via plotly
@@ -59,6 +68,8 @@ plotly==5.22.0
 polars==0.20.30
 pyarrow==16.1.0
 pyedm==2.0.1
+pynndescent==0.5.13
+    # via umap-learn
 pyobjc-core==10.3
     # via pyobjc-framework-cocoa
     # via pyobjc-framework-libdispatch
@@ -85,9 +96,13 @@ rpds-py==0.18.1
     # via referencing
 scikit-learn==1.5.0
     # via pyedm
+    # via pynndescent
+    # via umap-learn
 scipy==1.13.1
     # via pyedm
+    # via pynndescent
     # via scikit-learn
+    # via umap-learn
 six==1.16.0
     # via python-dateutil
 tenacity==8.3.0
@@ -98,8 +113,10 @@ tinygrad==0.9.0
     # via edm
 tqdm==4.66.4
     # via tinygrad
+    # via umap-learn
 traitlets==5.14.3
     # via jupyter-core
     # via nbformat
 tzdata==2024.1
     # via pandas
+umap-learn==0.5.6
