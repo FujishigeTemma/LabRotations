@@ -7,11 +7,10 @@
 #   all-features: true
 #   with-sources: false
 #   generate-hashes: false
+#   universal: false
 
 -e file:libs/edm
 -e file:libs/generate
-appnope==0.1.4
-    # via ipykernel
 asttokens==2.4.1
     # via stack-data
 attrs==23.2.0
@@ -130,17 +129,6 @@ pygments==2.18.0
     # via ipython
 pynndescent==0.5.13
     # via umap-learn
-pyobjc-core==10.3
-    # via pyobjc-framework-cocoa
-    # via pyobjc-framework-libdispatch
-    # via pyobjc-framework-metal
-pyobjc-framework-cocoa==10.3
-    # via pyobjc-framework-libdispatch
-    # via pyobjc-framework-metal
-pyobjc-framework-libdispatch==10.3
-    # via tinygrad
-pyobjc-framework-metal==10.3
-    # via tinygrad
 pyparsing==3.1.2
     # via matplotlib
 pytest==8.2.2

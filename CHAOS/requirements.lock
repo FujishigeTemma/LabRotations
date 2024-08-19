@@ -7,6 +7,7 @@
 #   all-features: true
 #   with-sources: false
 #   generate-hashes: false
+#   universal: false
 
 -e file:libs/edm
 -e file:libs/generate
@@ -70,17 +71,6 @@ pyarrow==16.1.0
 pyedm==2.0.1
 pynndescent==0.5.13
     # via umap-learn
-pyobjc-core==10.3
-    # via pyobjc-framework-cocoa
-    # via pyobjc-framework-libdispatch
-    # via pyobjc-framework-metal
-pyobjc-framework-cocoa==10.3
-    # via pyobjc-framework-libdispatch
-    # via pyobjc-framework-metal
-pyobjc-framework-libdispatch==10.3
-    # via tinygrad
-pyobjc-framework-metal==10.3
-    # via tinygrad
 pyparsing==3.1.2
     # via matplotlib
 python-dateutil==2.9.0.post0

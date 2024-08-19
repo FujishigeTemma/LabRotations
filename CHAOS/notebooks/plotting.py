@@ -5,6 +5,8 @@ import plotly.graph_objects as go
 import polars as pl
 import pyEDM
 from plotly.subplots import make_subplots
+from matplotlib import colormaps
+from PIL import Image
 
 
 def autocorrelation(x: pl.Series, max_lag: int):
@@ -594,4 +596,41 @@ def plot_improved_predictions(
         height=300 * math.ceil(k / 3),
     )
 
+    fig.show()
+
+def save_matrix(Matrix: np.ndarray, filename: str, cell_size: int = 1):
+    Matrix = (Matrix + 1) / 2
+
+    colormap = colormaps.get_cmap("jet")
+    colors = (colormap(Matrix) * 255).astype(np.uint8)
+    img = Image.fromarray(colors)
+
+    width, height = img.size
+    img = img.resize(
+        (width * cell_size, height * cell_size), resample=Image.Resampling.NEAREST
+    )
+
+    img.save(filename)
+
+def plot_rho_curve(arr: np.ndarray):
+    generator = np.random.default_rng(42)
+    sorted = np.sort(arr if len(arr) < 2000 else generator.choice(arr, 2000))
+
+    layout = go.Layout(
+        title="Rho Curve",
+        xaxis=dict(title="column"),
+        yaxis=dict(title="rho"),
+        width=800,
+        height=800,
+    )
+
+    data = [
+        go.Scatter(
+            x=np.arange(len(sorted)),
+            y=sorted,
+            showlegend=False,
+        )
+    ]
+
+    fig = go.Figure(data=data, layout=layout)
     fig.show()
