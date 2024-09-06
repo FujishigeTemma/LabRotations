@@ -3,7 +3,6 @@ from functools import reduce
 import numpy as np
 from scipy.cluster.hierarchy import (
     ClusterNode,
-    dendrogram,
     leaves_list,
     linkage,
     to_tree,
@@ -45,9 +44,7 @@ def find_lowest_common_ancestor(Z: np.ndarray, target_leaves: np.ndarray):
 
     leaf_paths = [paths[leaf] for leaf in target_leaves]
 
-    shortest_common_path = reduce(
-        lambda x, y: [a for a, b in zip(x, y) if a == b], leaf_paths
-    )
+    shortest_common_path = reduce(lambda x, y: [a for a, b in zip(x, y) if a == b], leaf_paths)
 
     lca_id = shortest_common_path[-1]
     lca = next((node for node in nodelist if node.id == lca_id), None)
@@ -58,9 +55,7 @@ def find_lowest_common_ancestor(Z: np.ndarray, target_leaves: np.ndarray):
     return lca, paths, np.array(collect_leaves(lca), dtype=np.int32)
 
 
-def filter_redundunt_factors(
-    corr_matrix: np.ndarray, threshold: float
-) -> tuple[np.ndarray, np.ndarray]:
+def filter_redundant_factors(corr_matrix: np.ndarray, threshold: float) -> tuple[np.ndarray, np.ndarray]:
     n = corr_matrix.shape[0]
     mask = np.ones(n, dtype=bool)
     np.fill_diagonal(corr_matrix, 0)

@@ -1,5 +1,5 @@
 import numpy as np
-from edm.simplex_projection import pad, pairwise_distance, topk
+from edm.util import pad, pairwise_distance, topk
 from tinygrad import Tensor
 from tinygrad.dtype import dtypes
 

@@ -2,15 +2,20 @@ import numpy as np
 
 
 def lagged_embed(x: np.ndarray, tau: int, e: int):
-    """
-    Parameters:
-        `x`: np.ndarray of shape (N,)
-        `tau`: int
-        `e`: int
+    """Lagged embedding of a time series `x`.
 
-    Returns:
-        np.ndarray of shape `(N - (e - 1) * tau, e)`
+    Parameters
+    ----------
+        `x` : `np.ndarray` of shape `(N,)`
+        `tau` : `int`
+        `e` : `int`
 
+    Returns
+    -------
+        `np.ndarray` of shape `(N - (e - 1) * tau, e)`
+
+    Examples
+    --------
     ```
     import numpy as np
     from edm.embedding import lagged_embed
@@ -35,6 +40,5 @@ def lagged_embed(x: np.ndarray, tau: int, e: int):
     assert e * tau <= x.shape[0], "e and tau must satisfy `e * tau < len(X)`"
 
     return np.array(
-        [x[tau * (e - 1) :]]
-        + [x[tau * i : -tau * ((e - 1) - i)] for i in reversed(range(e - 1))]
+        [x[tau * (e - 1) :]] + [x[tau * i : -tau * ((e - 1) - i)] for i in reversed(range(e - 1))]
     ).transpose()

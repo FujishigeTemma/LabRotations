@@ -10,7 +10,6 @@ wheels/
 .venv
 
 data
+outputs
 
 LKH-*
-**/*.png
-data.zip

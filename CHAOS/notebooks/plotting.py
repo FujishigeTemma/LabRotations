@@ -4,9 +4,9 @@ import numpy as np
 import plotly.graph_objects as go
 import polars as pl
 import pyEDM
-from plotly.subplots import make_subplots
 from matplotlib import colormaps
 from PIL import Image
+from plotly.subplots import make_subplots
 
 
 def autocorrelation(x: pl.Series, max_lag: int):
@@ -24,10 +24,7 @@ def plot_timeseries(df: pl.DataFrame):
         yaxis=dict(title="Expression"),
     )
 
-    data = [
-        go.Scatter(x=t, y=df[column], name=column, showlegend=False)
-        for column in df.columns
-    ]
+    data = [go.Scatter(x=t, y=df[column], name=column, showlegend=False) for column in df.columns]
 
     fig = go.Figure(data=data, layout=layout)
     fig.show()
@@ -55,22 +52,28 @@ def plot_distributions(df1: pl.DataFrame, df2: pl.DataFrame):
 
 def plot_columns(df: pl.DataFrame, columns: list[str]) -> None:
     fig = make_subplots(
-        rows=1, cols=len(columns), subplot_titles=columns, shared_yaxes=True
+        rows=math.ceil(len(columns) / 3),
+        cols=3 if len(columns) >= 3 else len(columns),
+        subplot_titles=columns,
+        shared_yaxes=True,
+        horizontal_spacing=0.01,
+        vertical_spacing=0.3 / math.ceil(len(columns) / 3),
     )
 
     for i, column in enumerate(columns):
         # sampling interval is 5 minutes
         fig.add_trace(
-            go.Scatter(
-                x=[v * 5 for v in range(df.shape[0])], y=df[column], name=column
-            ),
-            row=1,
-            col=i + 1,
+            go.Scatter(x=[v * 5 for v in range(df.shape[0])], y=df[column], name=column),
+            row=i // 3 + 1,
+            col=i % 3 + 1,
         )
-        fig.update_xaxes(title_text="time (min)", row=1, col=i + 1)
-    fig.update_yaxes(title_text="Expression", row=1, col=1)
+        if i % 3 == 0:
+            fig.update_yaxes(title_text="Expression", row=i // 3 + 1, col=1)
+        # if last row, update x-axis title
+        if i >= len(columns) - 3:
+            fig.update_xaxes(title_text="time (min)", row=i // 3 + 1, col=i % 3 + 1)
 
-    fig.update_layout(height=400, width=1000, showlegend=False)
+    fig.update_layout(height=300 * math.ceil(len(columns) / 3), width=1000, showlegend=False)
     fig.show()
 
 
@@ -140,9 +143,7 @@ def plot_embedding4D(df: pl.DataFrame, columns: list[str], eye: dict) -> None:
     fig.show()
 
 
-def plot_rho_Tp_tau(
-    df: pl.DataFrame, columns: list[str], E: int, maxTp: int, minTau: int
-):
+def plot_rho_Tp_tau(df: pl.DataFrame, columns: list[str], E: int, maxTp: int, minTau: int):
     PredictIntervalKwargs = {
         "dataFrame": df.to_pandas(),
         "lib": [1, df.shape[0] // 2],
@@ -166,9 +167,7 @@ def plot_rho_Tp_tau(
     for i, column in enumerate(columns):
         rho = []
         for tau in tau_range:
-            result = pyEDM.PredictInterval(
-                columns=column, target=column, tau=tau, **PredictIntervalKwargs
-            )
+            result = pyEDM.PredictInterval(columns=column, target=column, tau=tau, **PredictIntervalKwargs)
             rho.append(result["rho"].values)
 
         Tp, tau = np.meshgrid(Tp_range, tau_range)
@@ -202,9 +201,7 @@ def plot_rho_Tp_tau(
         zaxis_range=[-1, 1],
     )
 
-    fig.update_layout(
-        height=400, width=len(columns) * 400, margin=dict(l=20, r=20, t=30, b=30)
-    )
+    fig.update_layout(height=400, width=len(columns) * 400, margin=dict(l=20, r=20, t=30, b=30))
     fig.show()
 
 
@@ -230,9 +227,7 @@ def plot_rho_Tp(df: pl.DataFrame, columns: list[str], E: int, maxTp: int, tau: i
     )
 
     for i, column in enumerate(columns):
-        rho = pyEDM.PredictInterval(
-            columns=column, target=column, **PredictIntervalKwargs
-        )["rho"]
+        rho = pyEDM.PredictInterval(columns=column, target=column, **PredictIntervalKwargs)["rho"]
         autocorr = autocorrelation(df[column], max_lag=maxTp)
 
         showlegend = True if i == 0 else False
@@ -274,9 +269,7 @@ def plot_rho_Tp(df: pl.DataFrame, columns: list[str], E: int, maxTp: int, tau: i
     fig.show()
 
 
-def plot_rho_E_tau(
-    df: pl.DataFrame, columns: list[str], maxE: int, Tp: int, minTau: int
-):
+def plot_rho_E_tau(df: pl.DataFrame, columns: list[str], maxE: int, Tp: int, minTau: int):
     EmbedDimensionKwargs = {
         "dataFrame": df.to_pandas(),
         "lib": [1, df.shape[0] // 2],
@@ -300,9 +293,7 @@ def plot_rho_E_tau(
     for i, column in enumerate(columns):
         rho = []
         for tau in tau_range:
-            result = pyEDM.EmbedDimension(
-                columns=column, target=column, tau=tau, **EmbedDimensionKwargs
-            )
+            result = pyEDM.EmbedDimension(columns=column, target=column, tau=tau, **EmbedDimensionKwargs)
             rho.append(result["rho"].values)
 
         E, tau = np.meshgrid(E_range, tau_range)
@@ -328,9 +319,7 @@ def plot_rho_E_tau(
         zaxis_range=[-1, 1],
     )
 
-    fig.update_layout(
-        height=400, width=len(columns) * 400, margin=dict(l=20, r=20, t=30, b=30)
-    )
+    fig.update_layout(height=400, width=len(columns) * 400, margin=dict(l=20, r=20, t=30, b=30))
     fig.show()
 
 
@@ -377,9 +366,7 @@ def plot_lagged3D(df: pl.DataFrame, column: str, tau: int) -> None:
 
     layout = go.Layout(
         title=f"Lagged Plot for {column}",
-        scene=dict(
-            xaxis_title="X(t)", yaxis_title=f"X(t-{tau})", zaxis_title=f"X(t-2*{tau}"
-        ),
+        scene=dict(xaxis_title="X(t)", yaxis_title=f"X(t-{tau})", zaxis_title=f"X(t-2*{tau}"),
         width=800,
         height=600,
     )
@@ -397,9 +384,7 @@ def plot_lagged3D(df: pl.DataFrame, column: str, tau: int) -> None:
     fig.show()
 
 
-def find_best_E_tau_Tp(
-    df: pl.DataFrame, column: str, maxE: int, minTau: int, maxTp: int
-):
+def find_best_E_tau_Tp(df: pl.DataFrame, column: str, maxE: int, minTau: int, maxTp: int):
     SimplexKwargs = {
         "dataFrame": df.to_pandas(),
         "lib": [1, df.shape[0] // 2],
@@ -468,9 +453,7 @@ def plot_rho_3D(rho: np.ndarray):
     fig.show()
 
 
-def find_additional_factors(
-    df: pl.DataFrame, columns: list[str], target: str, Tp: int, tau: int
-):
+def find_additional_factors(df: pl.DataFrame, columns: list[str], target: str, Tp: int, tau: int):
     SimplexKwargs = {
         "dataFrame": df.to_pandas(),
         "target": target,
@@ -518,11 +501,7 @@ def find_additional_factors(
 def plot_rho_with_additional_factors(results: pl.DataFrame):
     results = results.sort(by="rho")
 
-    fig = go.Figure(
-        data=go.Scatter(
-            x=list(range(len(results))), y=results["rho"], mode="lines+markers"
-        )
-    )
+    fig = go.Figure(data=go.Scatter(x=list(range(len(results))), y=results["rho"], mode="lines+markers"))
 
     base_rho = results.row(by_predicate=(pl.col("column") == "Base"))[1]
     fig.add_shape(
@@ -598,6 +577,7 @@ def plot_improved_predictions(
 
     fig.show()
 
+
 def save_matrix(Matrix: np.ndarray, filename: str, cell_size: int = 1):
     Matrix = (Matrix + 1) / 2
 
@@ -606,19 +586,19 @@ def save_matrix(Matrix: np.ndarray, filename: str, cell_size: int = 1):
     img = Image.fromarray(colors)
 
     width, height = img.size
-    img = img.resize(
-        (width * cell_size, height * cell_size), resample=Image.Resampling.NEAREST
-    )
+    img = img.resize((width * cell_size, height * cell_size), resample=Image.Resampling.NEAREST)
 
     img.save(filename)
 
+
 def plot_rho_curve(arr: np.ndarray):
     generator = np.random.default_rng(42)
-    sorted = np.sort(arr if len(arr) < 2000 else generator.choice(arr, 2000))
+    small = len(arr) < 2000
+    sorted = np.sort(arr if small else generator.choice(arr, 2000))
 
     layout = go.Layout(
-        title="Rho Curve",
-        xaxis=dict(title="column"),
+        title="Rho Curve" if small else f"Rho Curve (Sampled 2000 from {len(arr)})",
+        xaxis=dict(title="pair"),
         yaxis=dict(title="rho"),
         width=800,
         height=800,

@@ -1,16 +1,13 @@
 import numpy as np
 import polars as pl
-from tinygrad import Tensor
-from tinygrad.dtype import dtypes
 
 from edm.embedding import lagged_embed
-from edm.simplex_projection import pad, pairwise_distance, topk
+from edm.tensor import Tensor, dtypes
+from edm.util import pad, pairwise_distance, topk
 
 
 def calculate_rho(observations: np.ndarray, predictions: np.ndarray):
-    assert len(observations) == len(
-        predictions
-    ), "observations and predictions must have the same length"
+    assert len(observations) == len(predictions), "observations and predictions must have the same length"
     rho = np.corrcoef(observations, predictions)[0, 1]
     return rho
 
@@ -62,9 +59,7 @@ def find_best_embedding(x: np.ndarray, tau_list: list[int], e_list: list[int], T
                 mask[lib_size:] = False
 
                 # find k(=e+1) nearest neighbors in phase space for simplex projection
-                indices_masked, _ = topk(
-                    D[i * len(e_list) + j, t, mask], e + 1, largest=False
-                )
+                indices_masked, _ = topk(D[i * len(e_list) + j, t, mask], e + 1, largest=False)
                 indices = seq[mask][indices_masked]
                 predictions[k] = X[i * len(e_list) + j, indices + Tp].mean()
 
