@@ -8,7 +8,7 @@
 #   with-sources: false
 #   generate-hashes: false
 
--e file:libs/edm
+-e file:libs/edmkit
 -e file:libs/generate
 attrs==23.2.0
     # via jsonschema
@@ -56,7 +56,7 @@ numba==0.60.0
     # via umap-learn
 numpy==2.0.0
     # via contourpy
-    # via edm
+    # via edmkit
     # via generate
     # via matplotlib
     # via numba
@@ -80,6 +80,7 @@ plotly==5.22.0
 polars==0.20.30
 pyarrow==16.1.0
 pyedm==2.0.1
+pygraphviz==1.14
 pynndescent==0.5.13
     # via umap-learn
 pyobjc-core==10.3.1
@@ -123,11 +124,10 @@ tenacity==8.3.0
     # via plotly
 threadpoolctl==3.5.0
     # via scikit-learn
-tinygrad==0.9.0
-    # via edm
+tinygrad==0.9.2
+    # via edmkit
 torch==2.2.2
 tqdm==4.66.4
-    # via tinygrad
     # via umap-learn
 traitlets==5.14.3
     # via jupyter-core
