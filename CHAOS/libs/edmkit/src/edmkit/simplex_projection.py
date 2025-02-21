@@ -41,7 +41,7 @@ def simplex_projection(
         - If `partition` is specified and is greater than or equal to the number of points.
         - If any value in `t` is less than `partition` when `partition` is specified.
     """
-    assert X.shape[0] == Y.shape[0], "X and Y must have the same length"
+    assert X.shape[0] == Y.shape[0], f"X and Y must have the same length, got X.shape={X.shape} and Y.shape={Y.shape}"
 
     D = pairwise_distance(Tensor(X, dtype=dtypes.float32)).numpy()
 
@@ -59,8 +59,10 @@ def simplex_projection(
 
         # split into lib and test
         if partition is not None:
-            assert partition < N, "partition must be less than the number of points"
-            assert (t >= partition).all(), "t must be greater than or equal to partition when partition is specified"
+            assert partition < N, f"partition must be less than the number of points, got partition={partition} and N={N}"
+            assert (t >= partition).all(), (
+                f"t must be greater than or equal to partition when partition is specified, got t={t} and partition={partition}"
+            )
             mask[partition:] = False
 
         # exclude neighbors within exclusion_radius

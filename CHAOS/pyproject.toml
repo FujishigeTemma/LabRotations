@@ -3,6 +3,8 @@ name = "chaos"
 version = "0.1.0"
 description = "Add your description here"
 authors = [{ name = "FUJISHIGE TEMMA", email = "tenma.x0@gmail.com" }]
+readme = "README.md"
+requires-python = ">= 3.12"
 dependencies = [
     "pyedm>=2.0.1",
     "numpy>=1.26.4",
@@ -12,21 +14,19 @@ dependencies = [
     "tinygrad>=0.9.0",
     "polars>=0.20.30",
     "scipy>=1.13.1",
-    # 0.2.1 is not ready yet for Mac M1 platform
+    # 0.2.1 is not ready yet for Mac M4 platform
     "kaleido==0.2.0",
     "pillow>=10.3.0",
     "pyarrow>=16.1.0",
     "umap-learn>=0.5.6",
     "tqdm>=4.66.4",
     "torch>=2.2.2",
-    "networkx>=3.3"
+    "networkx>=3.3",
+    "edmkit",
+    "h5py>=3.12.1",
+    "safetensors>=0.5.2",
+    "fastexcel>=0.12.1",
 ]
-readme = "README.md"
-requires-python = ">= 3.12"
-
-[tool.rye]
-managed = true
-virtual = true
 
 [dependency-groups]
 dev = [
@@ -36,14 +36,15 @@ dev = [
     "setuptools>=69.5.1",
     "ipywidgets>=8.1.2",
     "ipympl>=0.9.4",
+    "pytest>=8.3.4",
 ]
 workaround = [
     # https://github.com/astral-sh/uv/issues/6281#issuecomment-2316166949
     "llvmlite>=0.43.0"
 ]
 
-[tool.rye.workspace]
-members = ["libs/*"]
+[tool.uv.sources]
+edmkit = { workspace = true }
 
-[tool.ruff]
-line-length = 120
+[tool.uv.workspace]
+members = ["libs/*"]

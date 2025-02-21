@@ -2,7 +2,7 @@
 import platform
 
 # workaround
-if platform.system() == "Darwin":
+if platform.system() == "Darwin" and platform.processor() != "arm":
     import os
 
     os.environ["METAL_XCODE"] = "1"

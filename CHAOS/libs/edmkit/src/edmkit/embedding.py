@@ -49,10 +49,8 @@ def lagged_embed(x: np.ndarray, tau: int, e: int):
     # (6, 3)
     ```
     """
-    assert len(x.shape) == 1, "X must be a 1D array"
-    assert tau > 0 and e > 0, "tau and e must be positive"
-    assert (e - 1) * tau <= x.shape[0], "e and tau must satisfy `(e - 1) * tau < len(X)`"
+    assert len(x.shape) == 1, f"X must be a 1D array, got x.shape={x.shape}"
+    assert tau > 0 and e > 0, f"tau and e must be positive, got tau={tau}, e={e}"
+    assert (e - 1) * tau <= x.shape[0], f"e and tau must satisfy `(e - 1) * tau < len(X)`, got e={e}, tau={tau}"
 
-    return np.array(
-        [x[tau * (e - 1) :]] + [x[tau * i : -tau * ((e - 1) - i)] for i in reversed(range(e - 1))]
-    ).transpose()
+    return np.array([x[tau * (e - 1) :]] + [x[tau * i : -tau * ((e - 1) - i)] for i in reversed(range(e - 1))]).transpose()

@@ -10,17 +10,24 @@ def calculate_rho(observations: np.ndarray, predictions: np.ndarray):
     return np.corrcoef(observations.T, predictions.T)[0, 1]
 
 
-def search_best_embedding(x: np.ndarray, tau_list: list[int], e_list: list[int], Tp: int):
-    assert all(tau > 0 for tau in tau_list), "tau must be positive"
-    assert all(e > 0 for e in e_list), "e must be positive"
+def search_best_embedding(
+    x: np.ndarray, tau_list: list[int], e_list: list[int], Tp: int, max_L: int | None = None, rng: np.random.Generator | None = None
+):
+    assert all(tau > 0 for tau in tau_list), f"tau must be positive, got tau_list={tau_list}"
+    assert all(e > 0 for e in e_list), f"e must be positive, got e_list={e_list}"
+    assert max_L is None or max_L <= len(x), f"max_L must be less than or equal to len(x), got max_L={max_L} and len(x)={len(x)}"
+
+    if rng is None:
+        rng = np.random.default_rng()
+
+    if max_L is not None:
+        x = x[rng.choice(len(x), min(len(x), max_L), replace=False)]
 
     # lagged_embed(x, tau, e).shape[0] == len(x) - (e - 1) * tau
     min_L = len(x) - (max(e_list) - 1) * max(tau_list)
-    assert (
-        min_L > 0
-    ), f"Not enough data points to embed. len(x)(={len(x)}) - max(e)(={max(e_list)}) * max(tau)(={max(tau_list)}) = {min_L}"
-
-    print(f"min_L={min_L}")
+    assert min_L > 0, (
+        f"Not enough data points to embed, got len(x)(={len(x)}) - max(e)(={max(e_list)}) * max(tau)(={max(tau_list)}) = min_L(={min_L})"
+    )
 
     embeddings: list[np.ndarray] = []
     for tau in tau_list:
