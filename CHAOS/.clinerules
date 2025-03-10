@@ -1,0 +1,44 @@
+# CHAOS Project Rules and Patterns
+
+## Project Structure
+- Python libraries are organized in the `libs/` directory
+- Each library has its own pyproject.toml and README.md
+- Notebooks are stored in the `notebooks/` directory
+- Data files are stored in the `data/` directory
+- Generated outputs go to the `outputs/` directory
+
+## Coding Patterns
+- Python modules follow a clear separation of concerns
+- Core algorithms are implemented in dedicated modules
+- Utility functions are separated from core algorithms
+- Tests follow the naming convention `test_*.py`
+
+## Documentation Patterns
+- Memory bank is maintained in the `memory-bank/` directory
+- Core documentation files follow the structure defined in the memory bank
+- Code should include docstrings for functions and classes
+- Notebooks serve as executable documentation for algorithms
+
+## Development Workflow
+- Python version is managed via uv (.python-version files)
+- Dependencies are defined in pyproject.toml
+- Linting is performed using ruff (ruff.toml)
+- Unit tests should be written for new functionality
+
+## Project Intelligence
+- The project focuses on complex systems analysis and chaos theory
+- Key algorithms include Empirical Dynamic Modeling techniques
+- The codebase is organized into modular libraries with clear interfaces
+- Notebooks demonstrate various applications and techniques
+
+## Learning Journal
+- Initial memory bank setup completed on 2025-03-06
+- Project appears to be research-oriented with a focus on nonlinear dynamics
+- Core libraries (edmkit, generate) implement fundamental algorithms
+- Further exploration needed to understand implementation details
+
+## User Preferences
+- Maintain clear separation between libraries
+- Follow existing code organization patterns
+- Document algorithms and their theoretical background
+- Ensure tests cover core functionality

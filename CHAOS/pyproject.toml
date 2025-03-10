@@ -26,6 +26,8 @@ dependencies = [
     "h5py>=3.12.1",
     "safetensors>=0.5.2",
     "fastexcel>=0.12.1",
+    "generate",
+    "wandb>=0.19.8",
 ]
 
 [dependency-groups]
@@ -45,6 +47,7 @@ workaround = [
 
 [tool.uv.sources]
 edmkit = { workspace = true }
+generate = { workspace = true }
 
 [tool.uv.workspace]
 members = ["libs/*"]

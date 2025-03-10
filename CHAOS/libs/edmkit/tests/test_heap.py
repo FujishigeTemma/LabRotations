@@ -71,7 +71,7 @@ def test_insert_and_min(empty_heap: FibonacciHeap):
     assert empty_heap.min() == node_100
     assert empty_heap.min().key == 100
 
-    node_200 = empty_heap.insert(200, "two-hundred")
+    empty_heap.insert(200, "two-hundred")
     # The min node should still be 100
     assert empty_heap.min() == node_100
     assert empty_heap.min().key == 100
